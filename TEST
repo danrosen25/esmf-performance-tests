@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# usage instructions
+usage () {
+  printf "\n"
+  printf "Usage: $0 [OPTIONS ...] [ESMF_PERFORMANCE_TEST]\n"
+  printf "\n"
+  printf "ESMF_PERFORMANCE_TEST\n"
+  printf "  ESMF performance test configuration file\n"
+  printf "\n"
+  printf "OPTIONS\n"
+  printf "  --env-auto=[ON|OFF]\n"
+  printf "      Disable automatic system dependent environment settings\n"
+  printf "      (default: ON)\n"
+  printf "\n"
+}
+
+# usage error
+usage_error () {
+  printf "\e[31mERROR: $1 $2\e[0m\n"
+  usage
+  exit 1
+}
+
+# error
+error () {
+  printf "\e[31mERROR: $1\e[0m\n"
+  exit 1
+}
+
+# load tools
+source tools/bashtools.bash
+
+# settings
+EPTDIR=$(cd "$(dirname "$(readlink -f -n "${BASH_SOURCE[0]}" )" )" && pwd -P)
+ENVDIR=${EPTDIR}/env
+EPTCFG=""
+SYSTEM=$(find_system)
+ENV_AUTO="ON"
+
+# process arguments
+POSITIONAL_ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --help|-h) usage; exit 0 ;;
+    --env-auto=?*) ENV_AUTO=${1#*=} ;;
+    --env-auto)  usage_error "$1" "requires an argument" ;;
+    --env-auto=) usage_error "$1" "requires an argument" ;;
+    -?*) usage_error "$1" "unknown option" ;;
+    *) POSITIONAL_ARGS+=("${1}") ;;
+  esac
+  shift
+done
+set -- "${POSITIONAL_ARGS[@]}"
+
+# set up system dependent environment
+case "${ENV_AUTO}" in
+  ON|on) setup_system ${SYSTEM} ${ENVDIR} ;;
+  OFF|off) ;;
+  *) usage_error "--env-auto=${ENV_AUTO}" "unknown option"
+esac
+
+set -eu
+
+# set performance test configuration file
+if [[ $# -ge 1 ]]; then
+  EPTCFG="${1}"
+  if [ ! -f "${EPTCFG}" ]; then
+    error "ESMF_PERFORMANCE_TEST file is missing: ${EPTCFG}"
+  fi
+else
+   usage_error "ESMF_PERFORMANCE_TEST" "required argument"
+fi
+
+python3 tools/pytools.py --ifile ${EPTCFG}
