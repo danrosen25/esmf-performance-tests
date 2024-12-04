@@ -17,14 +17,14 @@ usage () {
 
 # usage error
 usage_error () {
-  printf "\e[31mERROR: $1 $2\e[0m\n"
+  printf "\e[91mERROR: $1 $2\e[0m\n"
   usage
   exit 1
 }
 
 # error
 error () {
-  printf "\e[31mERROR: $1\e[0m\n"
+  printf "\e[91mERROR: $1\e[0m\n"
   exit 1
 }
 
@@ -65,11 +65,8 @@ set -eu
 # set performance test configuration file
 if [[ $# -ge 1 ]]; then
   EPTCFG="${1}"
-  if [ ! -f "${EPTCFG}" ]; then
-    error "ESMF_PERFORMANCE_TEST file is missing: ${EPTCFG}"
-  fi
 else
-   usage_error "ESMF_PERFORMANCE_TEST" "required argument"
+   usage_error "ESMF_PERFORMANCE_TEST" "is required"
 fi
 
 python3 tools/pytools.py --ifile ${EPTCFG}

@@ -15,7 +15,8 @@ setup_system () {
       module load ${sysname}
       BATCHSYS="${BATCHSYS:-qsub}"
       CPERNODE="${CPERNODE:-64}" ;;
-    *) printf "ERROR: no modulefile file for ${sysname} in ${modfdir}\n"
+    *) printf "\e[91mERROR: no modulefile file for ${sysname}"
+       printf " in ${modfdir}\e[0m\n"
        exit 1 ;;
   esac
 }
