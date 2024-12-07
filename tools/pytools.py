@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from pathlib import Path
 import argparse
 import os
@@ -6,10 +8,20 @@ import yaml
 import subprocess
 import datetime
 
+def error(message: str):
+    sys.exit('\033[91mERROR: ' + message + '\033[0m')
+
+def warning(message: str):
+    print('\033[93mWARNING: ' + message + '\033[0m')
+
+def complete(message: str):
+    print('\033[92mCOMPLETE: ' + message + '\033[0m')
+
 class ESMFPerformanceTest():
     filepath: str = None
     config: dict = None
     esmfmkfile: str = None
+    name: str = None
     esmfconfig: dict = {}
     builddir: str = None
     logdir: str = None
@@ -18,16 +30,20 @@ class ESMFPerformanceTest():
     def __init__(self, filepath: str):
         self.filepath = format(filepath)
         if not os.path.exists(self.filepath):
-            self.error('File not found - ' + self.filepath)
+            error('File not found - ' + self.filepath)
         with open(self.filepath) as file:
             self.config = yaml.safe_load(file)
             if self.config is None:
-                self.error('File is empty - ' + self.filepath)
+                error('File is empty - ' + self.filepath)
+        if "name" not in self.config:
+            self.name = os.path.basename(self.filepath)
+        else:
+            self.name = self.config["name"]
         if "esmf" not in self.config:
             if os.environ.get('ESMFMKFILE') is None:
-                self.error('[esmf] not found - ' + self.filepath)
+                error('[esmf] not found - ' + self.filepath)
             else:
-                self.warning('Using ESMFMKFILE environment variable')
+                warning('Using ESMFMKFILE environment variable')
                 self.esmfmkfile = os.environ['ESMFMKFILE']
         else:
             if os.path.basename(self.config["esmf"]) == 'esmf.mk':
@@ -37,24 +53,15 @@ class ESMFPerformanceTest():
                     if 'esmf.mk' in files:
                         self.esmfmkfile = os.path.join(root, 'esmf.mk')
         if self.esmfmkfile is None:
-            self.error('esmf.mk not found - ' + format(self.config["esmf"]))
+            error('esmf.mk not found - ' + format(self.config["esmf"]))
         os.environ["ESMFMKFILE"] = self.esmfmkfile
         with open(self.esmfmkfile, "r") as file:
             for line in file:
                 if line.lstrip().startswith('ESMF_'):
                     key, value = line.split("=", maxsplit=1)
                     self.esmfconfig[key] = value.rstrip()
-        self.builddir = "build/" + os.path.basename(self.filepath)
-        self.logdir = "logs/" + os.path.basename(self.filepath)
-
-    def error(self, message: str):
-        sys.exit('\033[91mERROR: ' + message + '\033[0m')
-
-    def warning(self, message: str):
-        print('\033[93mWARNING: ' + message + '\033[0m')
-
-    def complete(self, message: str):
-        print('\033[92mCOMPLETE: ' + message + '\033[0m')
+        self.builddir = "build/" + self.name
+        self.logdir = "logs/" + self.name
 
     def esmf_vers_info(self):
         msg = ("ESMF Build Information" +
@@ -80,16 +87,16 @@ class ESMFPerformanceTest():
             cp = subprocess.run(["cmake", self.testsrc],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                self.error('CMake failure, see ' + format(logf.name))
+                error('CMake failure, see ' + format(logf.name))
             cp = subprocess.run(["make"],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                self.error('Build failure, see ' + format(logf.name))
+                error('Build failure, see ' + format(logf.name))
             cp = subprocess.run(["ctest"],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                self.error('Test failure, see ' + format(logf.name))
-        self.complete(self.filepath + ', see ' + format(logf.name))
+                error('Test failure, see ' + format(logf.name))
+        complete(self.name + ', see ' + format(logf.name))
 
 def main(argv):
 
