@@ -11,3 +11,4 @@ include(CTest)
 
 add_subdirectory(hello_world)
 add_subdirectory(esmf_initialize)
+add_subdirectory(esmf_reconcile)
