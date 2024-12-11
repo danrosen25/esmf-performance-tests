@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import argparse
+import xml.etree.ElementTree as ET
 import os
 import sys
 import yaml
@@ -9,13 +10,44 @@ import subprocess
 import datetime
 
 def error(message: str):
-    sys.exit('\033[91mERROR: ' + message + '\033[0m')
+    print('\033[91mERROR: ' + message + '\033[0m')
 
 def warning(message: str):
     print('\033[93mWARNING: ' + message + '\033[0m')
 
-def complete(message: str):
-    print('\033[92mCOMPLETE: ' + message + '\033[0m')
+class TestResults():
+    tests = []
+    def __init__(self, filepath: str):
+        self.append(filepath)
+    def append(self, filepath: str):
+        tree = ET.parse(filepath)
+        root = tree.getroot()
+        hostname = root.get('hostname')
+        timestamp = root.get('timestamp')
+        for t in root.findall('testcase'):
+            self.tests.append({"name": t.get('name'),
+                               "hostname": hostname,
+                               "timestamp": timestamp,
+                               "time": float(t.get('time')),
+                               "status": t.get('status')})
+    def __str__(self):
+        res = (f"| " +
+               f"{'name':20} | " +
+               f"{'hostname':20} | " +
+               f"{'status':6} | " +
+               f"{'time (s)':9} |")
+        res += ("\n| " +
+                "-" * 20 + " | " +
+                "-" * 20 + " | " +
+                "-" * 6 + " | " +
+                "-" * 9 + " |")
+        for t in self.tests:
+            res += (f"\n| " +
+                   f"{t['name']:20} | " +
+                   f"{t['hostname']:20} | " +
+                   f"{t['status']:6} | " +
+                   f"{t['time']:.3E} |")
+        return res
 
 class ESMFPerformanceTest():
     filepath: str = None
@@ -60,8 +92,8 @@ class ESMFPerformanceTest():
                 if line.lstrip().startswith('ESMF_'):
                     key, value = line.split("=", maxsplit=1)
                     self.esmfconfig[key] = value.rstrip()
-        self.builddir = "build/" + self.name
-        self.logdir = "logs/" + self.name
+        self.builddir = os.path.abspath(os.path.join("build", self.name))
+        self.logdir = os.path.abspath(os.path.join("logs", self.name))
 
     def esmf_vers_info(self):
         msg = ("ESMF Build Information" +
@@ -77,10 +109,15 @@ class ESMFPerformanceTest():
         os.makedirs(self.builddir, exist_ok=True)
         os.makedirs(self.logdir, exist_ok=True)
         logfpath = "{}/output-latest".format(self.logdir)
+        resfpath = "{}/results-latest.xml".format(self.logdir)
         if os.path.exists(logfpath):
             ts = os.path.getmtime(logfpath)
             tsiso = datetime.datetime.fromtimestamp(ts).replace(microsecond=0).isoformat()
             os.rename(logfpath, logfpath.replace("latest", tsiso))
+        if os.path.exists(resfpath):
+            ts = os.path.getmtime(resfpath)
+            tsiso = datetime.datetime.fromtimestamp(ts).replace(microsecond=0).isoformat()
+            os.rename(resfpath, resfpath.replace("latest", tsiso))
         with open(logfpath, "w") as logf:
             logf.write(self.esmf_vers_info())
             logf.flush()
@@ -92,11 +129,13 @@ class ESMFPerformanceTest():
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
                 error('Build failure, see ' + format(logf.name))
-            cp = subprocess.run(["ctest"],
+            cp = subprocess.run(["ctest", "--output-junit", resfpath],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
                 error('Test failure, see ' + format(logf.name))
-        complete(self.name + ', see ' + format(logf.name))
+        results = TestResults(resfpath)
+        print("FINISHED: " + self.name + " (" + format(logf.name) + ")")
+        print(results)
 
 def main(argv):
 
