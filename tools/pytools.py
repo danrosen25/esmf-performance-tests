@@ -187,7 +187,7 @@ class ESMFPerformanceTest():
         if options["inputdata"] is not None:
             inputdata = os.path.abspath(options["inputdata"])
             output += ('file(COPY "' + inputdata + '"\n' +
-                      'DESTINATION "' + tdir + '")\n')
+                      '\tDESTINATION "' + tdir + '")\n')
         if options["mpi"]:
             output += 'if(NOT MPI_Fortran_FOUND)\n'
             output += '\tMESSAGE(ERROR "' + name + ' requires MPI")\n'
@@ -201,7 +201,7 @@ class ESMFPerformanceTest():
             output += '\t$<TARGET_FILE:' + options["executable"] + '>\n'
         if options["arguments"] is not None:
             output += '\t' + options["arguments"] + '\n'
-        output += 'WORKING_DIRECTORY ' + tdir + ')\n'
+        output += '\tWORKING_DIRECTORY ' + tdir + ')\n'
         with open(cmakefpath, "w") as cmakef:
             cmakef.write(output)
 

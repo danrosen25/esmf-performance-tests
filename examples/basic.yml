@@ -8,33 +8,33 @@ testsuite:
     initialize:
         repeat: 2
         executable: esmf_initialize
-    reconcile_total_overlap:
-        executable: esmf_reconcile
-        inputdata: input/total_overlap.config
-        arguments: total_overlap.config
+    esmx_basic:
+        executable: esmx_basic
+        inputdata: input/esmxRunBasic.yml
+        arguments: esmxRunBasic.yml
         mpi: true
         mpinp: 4
+    reconcile_total_overlap:
+        executable: esmf_reconcile
+        inputdata: input/total_overlap.cfg
+        arguments: total_overlap.cfg
+        mpi: true
+        mpinp: 2
     reconcile_only_half:
         executable: esmf_reconcile
-        inputdata: input/only_half.config
-        arguments: only_half.config
+        inputdata: input/only_half.cfg
+        arguments: only_half.cfg
         mpi: true
         mpinp: 4
     reconcile_partial_overlap_2:
         executable: esmf_reconcile
-        inputdata: input/partial_overlap_2.config
-        arguments: partial_overlap_2.config
+        inputdata: input/partial_overlap_2.cfg
+        arguments: partial_overlap_2.cfg
         mpi: true
         mpinp: 4
     reconcile_partial_overlap_5:
         executable: esmf_reconcile
-        inputdata: input/partial_overlap_5.config
-        arguments: partial_overlap_5.config
+        inputdata: input/partial_overlap_5.cfg
+        arguments: partial_overlap_5.cfg
         mpi: true
         mpinp: 4
-    reconcile_total_overlap:
-        executable: esmf_reconcile
-        inputdata: input/total_overlap.config
-        arguments: total_overlap.config
-        mpi: true
-        mpinp: 2

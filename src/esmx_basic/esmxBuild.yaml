@@ -1,0 +1,8 @@
+application:
+  link_packages: OpenMP
+  link_libraries: "OpenMP::OpenMP_Fortran"
+  exe_name: esmx_basic
+
+components:
+  COMP1:
+  COMP2:

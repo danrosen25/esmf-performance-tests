@@ -12,6 +12,7 @@ find_package(MPI)
 
 add_subdirectory(esmf_initialize)
 add_subdirectory(esmf_reconcile)
+add_subdirectory(esmx_basic)
 
 file(GLOB_RECURSE TEST_INCLUDE_LIST "${CMAKE_CURRENT_BINARY_DIR}/testcfg/*.cmake")
 foreach(TEST_INCLUDE IN LISTS TEST_INCLUDE_LIST)
