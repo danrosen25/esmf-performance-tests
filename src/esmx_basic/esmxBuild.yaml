@@ -4,5 +4,5 @@ application:
   exe_name: esmx_basic
 
 components:
-  COMP1:
-  COMP2:
+  ESMX_COMP1:
+  ESMX_COMP2:

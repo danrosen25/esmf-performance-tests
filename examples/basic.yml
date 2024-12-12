@@ -8,6 +8,12 @@ testsuite:
     initialize:
         repeat: 2
         executable: esmf_initialize
+    nuopc_basic:
+        executable: nuopc_basic
+        inputdata: input/nuopcBasic.cfg
+        arguments: nuopcBasic.cfg
+        mpi: true
+        mpinp: 4
     esmx_basic:
         executable: esmx_basic
         inputdata: input/esmxRunBasic.yml

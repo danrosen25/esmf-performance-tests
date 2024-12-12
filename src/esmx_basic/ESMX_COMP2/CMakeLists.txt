@@ -5,7 +5,7 @@ find_package(ESMF 8.6.0 MODULE REQUIRED)
 
 set(CMAKE_Fortran_COMPILER "${ESMF_F90COMPILER}")
 
-project(Comp1
+project(ESMX_Comp2
         VERSION 1.0
         LANGUAGES Fortran)
 
@@ -24,12 +24,12 @@ else()
   message(WARNING "${CMAKE_Fortran_COMPILER_ID} Fortran compiler will be used with default options")
 endif()
 
-add_library(comp1 comp1.F90)
-target_link_libraries(comp1 PUBLIC ESMF)
-target_link_libraries(comp1 PUBLIC OpenMP::OpenMP_Fortran)
+add_library(esmx_comp2 esmx_comp2.F90)
+target_link_libraries(esmx_comp2 PUBLIC ESMF)
+target_link_libraries(esmx_comp2 PUBLIC OpenMP::OpenMP_Fortran)
 
-install(TARGETS comp1
-        EXPORT comp1
+install(TARGETS esmx_comp2
+        EXPORT esmx_comp2
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         INCLUDES DESTINATION mod
@@ -40,4 +40,4 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/
         PATTERN "*.mod"
         PATTERN "CMakeFiles" EXCLUDE
 )
-install(EXPORT comp1 DESTINATION cmake)
+install(EXPORT esmx_comp2 DESTINATION cmake)

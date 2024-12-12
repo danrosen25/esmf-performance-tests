@@ -8,10 +8,10 @@
 ! Licensed under the University of Illinois-NCSA License.
 !==============================================================================
 
-module COMP2
+module ESMX_COMP2
 
   !-----------------------------------------------------------------------------
-  ! COMP2 Generic Component 2 (basic ocean)
+  ! ESMX_COMP2 Generic Component 2 (basic ocean)
   !-----------------------------------------------------------------------------
 
   use ESMF
@@ -455,7 +455,7 @@ end module
 ! External access to SetVM
 subroutine SetVM(comp, rc)
   use ESMF
-  use COMP2, only: SetVMModule => SetVM
+  use ESMX_COMP2, only: SetVMModule => SetVM
   type(ESMF_GridComp) :: comp
   integer, intent(out) :: rc
   call SetVMModule(comp, rc)
@@ -468,7 +468,7 @@ end subroutine
 ! External access to SetServices
 subroutine SetServices(comp, rc)
   use ESMF
-  use COMP2, only: SetServicesModule => SetServices
+  use ESMX_COMP2, only: SetServicesModule => SetServices
   type(ESMF_GridComp) :: comp
   integer, intent(out) :: rc
   call SetServicesModule(comp, rc)

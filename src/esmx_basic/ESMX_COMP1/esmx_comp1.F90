@@ -8,10 +8,10 @@
 ! Licensed under the University of Illinois-NCSA License.
 !==============================================================================
 
-module COMP1
+module ESMX_COMP1
 
   !-----------------------------------------------------------------------------
-  ! COMP1: Generic Component 1 (basic atmosphere)
+  ! ESMX_COMP1: Generic Component 1 (basic atmosphere)
   !-----------------------------------------------------------------------------
 
   use ESMF
@@ -393,7 +393,7 @@ end module
 ! External access to SetVM
 subroutine SetVM(comp, rc)
   use ESMF
-  use COMP1, only: SetVMModule => SetVM
+  use ESMX_COMP1, only: SetVMModule => SetVM
   type(ESMF_GridComp) :: comp
   integer, intent(out) :: rc
   call SetVMModule(comp, rc)
@@ -406,7 +406,7 @@ end subroutine
 ! External access to SetServices
 subroutine SetServices(comp, rc)
   use ESMF
-  use COMP1, only: SetServicesModule => SetServices
+  use ESMX_COMP1, only: SetServicesModule => SetServices
   type(ESMF_GridComp) :: comp
   integer, intent(out) :: rc
   call SetServicesModule(comp, rc)
