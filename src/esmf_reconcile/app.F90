@@ -246,9 +246,9 @@ program esmf_reconcile_test
 
     allocate(petList(petCount))
 
-    do i = petListBounds(1), petListBounds(2)
-      petList(i) = i
-    end do ! createPL(i)
+    do i=1, petCount
+      petList(i) = petListBounds(1) + i - 1
+    enddo
   end subroutine
 
   subroutine get_comp_petlist(configComp, petList, rc)

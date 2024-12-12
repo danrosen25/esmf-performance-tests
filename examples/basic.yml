@@ -1,0 +1,39 @@
+# Basic YAML Test Suite
+
+name: "basic-tests"
+# esmf: <path_to_esmf>
+
+testsuite:
+    initialize:
+        repeat: 2
+        executable: esmf_initialize
+    reconcile_total_overlap:
+        executable: esmf_reconcile
+        inputdata: input/total_overlap.config
+        arguments: total_overlap.config
+        mpi: true
+        mpinp: 4
+    reconcile_only_half:
+        executable: esmf_reconcile
+        inputdata: input/only_half.config
+        arguments: only_half.config
+        mpi: true
+        mpinp: 4
+    reconcile_partial_overlap_2:
+        executable: esmf_reconcile
+        inputdata: input/partial_overlap_2.config
+        arguments: partial_overlap_2.config
+        mpi: true
+        mpinp: 4
+    reconcile_partial_overlap_5:
+        executable: esmf_reconcile
+        inputdata: input/partial_overlap_5.config
+        arguments: partial_overlap_5.config
+        mpi: true
+        mpinp: 4
+    reconcile_total_overlap:
+        executable: esmf_reconcile
+        inputdata: input/total_overlap.config
+        arguments: total_overlap.config
+        mpi: true
+        mpinp: 2
