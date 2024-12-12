@@ -72,6 +72,7 @@ class ESMFPerformanceTest():
     name: str = None
     esmfconfig: dict = {}
     esmfvers: str = None
+    profile: bool = False
     builddir: str = None
     testdir: str = None
     logdir: str = None
@@ -127,6 +128,9 @@ class ESMFPerformanceTest():
             abort('[testsuite] is empty - ' + self.filepath)
         else:
             self.set_default_testopts()
+        # read profile
+        if "profile" in config:
+            self.profile = config["profile"]
         # define directories
         self.builddir = os.path.abspath(os.path.join("build", self.name))
         self.testdir = os.path.abspath(os.path.join("run", self.name))
@@ -178,7 +182,8 @@ class ESMFPerformanceTest():
         # generate <test>.cmake file
         output = '# name: ' + name + '\n\n'
         output += 'list(APPEND TESTLIST ' + name + ')\n'
-        output += 'file(MAKE_DIRECTORY "' + tdir +'")\n'
+        output += 'file(REMOVE_RECURSE "' + tdir + '")\n'
+        output += 'file(MAKE_DIRECTORY "' + tdir + '")\n'
         if options["inputdata"] is not None:
             inputdata = os.path.abspath(options["inputdata"])
             output += ('file(COPY "' + inputdata + '"\n' +
@@ -220,6 +225,9 @@ class ESMFPerformanceTest():
             ts = os.path.getmtime(resfpath)
             tsiso = datetime.datetime.fromtimestamp(ts).replace(microsecond=0).isoformat()
             os.rename(resfpath, resfpath.replace("latest", tsiso))
+        if self.profile:
+            os.environ["ESMF_RUNTIME_PROFILE"] = "ON"
+            os.environ["ESMF_RUNTIME_PROFILE_OUTPUT"] = "SUMMARY"
         with open(logfpath, "w") as logf:
             logf.write(self.esmf_vers_info())
             logf.flush()
