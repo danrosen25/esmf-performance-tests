@@ -145,11 +145,16 @@ class ESMFPerformanceTest():
             if "executable" not in options:
                 abort('[executable] missing - ' + test + ' - ' + self.filepath)
             if "mpi" not in options:
-                options["mpi"] = False
-            if "mpinp" not in options:
-                options["mpinp"] = "1"
+                options["mpi"] = True
+            if options["mpi"]:
+                if "mpinp" not in options:
+                    options["mpinp"] = "1"
+                else:
+                    options["mpinp"] = str(options["mpinp"])
             else:
-                options["mpinp"] = str(options["mpinp"])
+                options["mpinp"] = "N/A"
+            if "timeout" not in options:
+                options["timeout"] = 0
             if "arguments" not in options:
                 options["arguments"] = None
             if "inputdata" not in options:
@@ -202,6 +207,8 @@ class ESMFPerformanceTest():
         if options["arguments"] is not None:
             output += '\t' + options["arguments"] + '\n'
         output += '\tWORKING_DIRECTORY ' + tdir + ')\n'
+        output += ('set_tests_properties(' + name + ' PROPERTIES' +
+                   ' TIMEOUT ' + format(options["timeout"]) + ')\n')
         with open(cmakefpath, "w") as cmakef:
             cmakef.write(output)
 

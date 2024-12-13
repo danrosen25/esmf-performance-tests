@@ -8,39 +8,41 @@ testsuite:
     initialize:
         repeat: 2
         executable: esmf_initialize
+        timeout: 60
+        mpi: False
     nuopc_basic:
         executable: nuopc_basic
         inputdata: input/nuopcBasic.cfg
         arguments: nuopcBasic.cfg
-        mpi: true
+        timeout: 60
         mpinp: 4
     esmx_basic:
         executable: esmx_basic
         inputdata: input/esmxRunBasic.yml
         arguments: esmxRunBasic.yml
-        mpi: true
+        timeout: 60
         mpinp: 4
     reconcile_total_overlap:
         executable: esmf_reconcile
         inputdata: input/total_overlap.cfg
         arguments: total_overlap.cfg
-        mpi: true
+        timeout: 60
         mpinp: 2
     reconcile_only_half:
         executable: esmf_reconcile
         inputdata: input/only_half.cfg
         arguments: only_half.cfg
-        mpi: true
+        timeout: 60
         mpinp: 4
     reconcile_partial_overlap_2:
         executable: esmf_reconcile
         inputdata: input/partial_overlap_2.cfg
         arguments: partial_overlap_2.cfg
-        mpi: true
+        timeout: 60
         mpinp: 4
     reconcile_partial_overlap_5:
         executable: esmf_reconcile
         inputdata: input/partial_overlap_5.cfg
         arguments: partial_overlap_5.cfg
-        mpi: true
+        timeout: 60
         mpinp: 4
