@@ -1,0 +1,52 @@
+# Basic YAML Test Suite
+
+name: "reconcile-mpi32768np"
+# esmf: <path_to_esmf>
+profile: on
+
+define: &esmf_reconcile
+  executable: esmf_reconcile
+  timeout: 1800
+  mpinp: 32768
+
+testsuite:
+    totloverlap_2cmp100fld:
+        <<: *esmf_reconcile
+        inputdata: input/reconcile_totaloverlap_2cmp100fld.cfg
+        arguments: reconcile_totaloverlap_2cmp100fld.cfg
+    totloverlap_2cmp200fld:
+        <<: *esmf_reconcile
+        inputdata: input/reconcile_totaloverlap_2cmp200fld.cfg
+        arguments: reconcile_totaloverlap_2cmp200fld.cfg
+    totloverlap_6cmp100fld:
+        <<: *esmf_reconcile
+        inputdata: input/reconcile_totaloverlap_6cmp100fld.cfg
+        arguments: reconcile_totaloverlap_6cmp100fld.cfg
+    totloverlap_6cmp200fld:
+        <<: *esmf_reconcile
+        inputdata: input/reconcile_totaloverlap_6cmp200fld.cfg
+        arguments: reconcile_totaloverlap_6cmp200fld.cfg
+    2575spilt_2cmp100fld:
+        <<: *esmf_reconcile
+        inputdata: input/reconcile_2575split_2cmp100fld.cfg
+        arguments: reconcile_2575split_2cmp100fld.cfg
+    2575spilt_2cmp200fld:
+        <<: *esmf_reconcile
+        inputdata: input/reconcile_2575split_2cmp200fld.cfg
+        arguments: reconcile_2575split_2cmp200fld.cfg
+    partoverlap_2cmp100fld:
+        <<: *esmf_reconcile
+        inputdata: input/reconcile_partialoverlap_2cmp100fld.cfg
+        arguments: reconcile_partialoverlap_2cmp100fld.cfg
+    partoverlap_2cmp200fld:
+        <<: *esmf_reconcile
+        inputdata: input/reconcile_partialoverlap_2cmp200fld.cfg
+        arguments: reconcile_partialoverlap_2cmp200fld.cfg
+    partoverlap_6cmp100fld:
+        <<: *esmf_reconcile
+        inputdata: input/reconcile_partialoverlap_6cmp100fld.cfg
+        arguments: reconcile_partialoverlap_6cmp100fld.cfg
+    partoverlap_6cmp200fld:
+        <<: *esmf_reconcile
+        inputdata: input/reconcile_partialoverlap_6cmp200fld.cfg
+        arguments: reconcile_partialoverlap_6cmp200fld.cfg
