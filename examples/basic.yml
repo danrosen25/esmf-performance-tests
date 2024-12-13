@@ -22,27 +22,21 @@ testsuite:
         arguments: esmxRunBasic.yml
         timeout: 60
         mpinp: 4
-    reconcile_total_overlap:
+    reconcile_totloverlap:
         executable: esmf_reconcile
-        inputdata: input/total_overlap.cfg
-        arguments: total_overlap.cfg
-        timeout: 60
-        mpinp: 2
-    reconcile_only_half:
-        executable: esmf_reconcile
-        inputdata: input/only_half.cfg
-        arguments: only_half.cfg
+        inputdata: input/reconcile_totaloverlap_2cmp200fld.cfg
+        arguments: reconcile_totaloverlap_2cmp200fld.cfg
         timeout: 60
         mpinp: 4
-    reconcile_partial_overlap_2:
+    reconcile_2575splt:
         executable: esmf_reconcile
-        inputdata: input/partial_overlap_2.cfg
-        arguments: partial_overlap_2.cfg
+        inputdata: input/reconcile_2575split_2cmp200fld.cfg
+        arguments: reconcile_2575split_2cmp200fld.cfg
         timeout: 60
         mpinp: 4
-    reconcile_partial_overlap_5:
+    reconcile_partoverlap:
         executable: esmf_reconcile
-        inputdata: input/partial_overlap_5.cfg
-        arguments: partial_overlap_5.cfg
+        inputdata: input/reconcile_partialoverlap_2cmp200fld.cfg
+        arguments: reconcile_partialoverlap_2cmp200fld.cfg
         timeout: 60
         mpinp: 4

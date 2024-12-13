@@ -276,8 +276,8 @@ program esmf_reconcile_test
         label="petListBoundsRel:", rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=__FILE__)) return
-      petListBounds(1) = INT(petListBoundsRel(1) * REAL(petCount-1))
-      petListBounds(2) = INT(petListBoundsRel(2) * REAL(petCount-1))
+      petListBounds(1) = INT(petListBoundsRel(1) * REAL(petCount))
+      petListBounds(2) = INT(petListBoundsRel(2) * REAL(petCount))-1
     end if
 
     call create_petlist(petListBounds, petList)
