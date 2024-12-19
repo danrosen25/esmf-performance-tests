@@ -33,7 +33,7 @@ program esmf_reconcile_test
   real(ESMF_KIND_R8)     :: globalMaxTime
   real(ESMF_KIND_R8)     :: petListBoundsRel(2)
   integer                :: argCount
-  integer, parameter     :: numTests=5
+  integer                :: numTests=1
 
   ! initialize ESMF
   call ESMF_Initialize(vm=vm, rc=rc)
@@ -81,6 +81,13 @@ program esmf_reconcile_test
     line=__LINE__, file=__FILE__)) &
     call ESMF_Finalize(endflag=ESMF_END_ABORT)
   call ESMF_ConfigLoadFile(config, configfile, rc=rc)
+  if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+    line=__LINE__, file=__FILE__)) &
+    call ESMF_Finalize(endflag=ESMF_END_ABORT)
+
+  ! read iterationCount
+  call ESMF_ConfigGetAttribute(config, label="iterationCount:", &
+    value=numTests, default=1, rc=rc)
   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
     line=__LINE__, file=__FILE__)) &
     call ESMF_Finalize(endflag=ESMF_END_ABORT)
