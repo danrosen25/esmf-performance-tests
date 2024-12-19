@@ -96,28 +96,17 @@ if(EXISTS ${ESMFMKFILE})
       message(WARNING "Static ESMF library (libesmf.a) not found in \
                        ${ESMF_LIBSDIR}. Try setting USE_ESMF_STATIC_LIBS=OFF")
     endif()
-    if(NOT TARGET ESMF::ESMF)
-      add_library(ESMF::ESMF STATIC IMPORTED)
-    endif()
-    if(NOT TARGET ESMF::ESMC)
-      add_library(ESMF::ESMC STATIC IMPORTED)
+    if(NOT TARGET ESMF)
+      add_library(ESMF STATIC IMPORTED)
     endif()
   else()
     find_library(ESMF_LIBRARY_LOCATION NAMES esmf PATHS ${ESMF_LIBSDIR} NO_DEFAULT_PATH)
     if(ESMF_LIBRARY_LOCATION MATCHES "ESMF_LIBRARY_LOCATION-NOTFOUND")
       message(WARNING "ESMF library not found in ${ESMF_LIBSDIR}.")
     endif()
-    if(NOT TARGET ESMF::ESMF)
-      add_library(ESMF::ESMF UNKNOWN IMPORTED)
+    if(NOT TARGET ESMF)
+      add_library(ESMF UNKNOWN IMPORTED)
     endif()
-    if(NOT TARGET ESMF::ESMC)
-      add_library(ESMF::ESMC UNKNOWN IMPORTED)
-    endif()
-  endif()
-
-  # Add ESMF as an alias to ESMF::ESMF for backward compatibility
-  if(NOT TARGET ESMF)
-    add_library(ESMF ALIAS ESMF::ESMF)
   endif()
 
   # Add ESMF include directories
@@ -150,15 +139,10 @@ if(EXISTS ${ESMFMKFILE})
                       ESMC_INTERFACE_LINK_LIBRARIES
         VERSION_VAR ESMF_VERSION)
 
-  set_target_properties(ESMF::ESMF PROPERTIES
+  set_target_properties(ESMF PROPERTIES
         IMPORTED_LOCATION "${ESMF_LIBRARY_LOCATION}"
         INTERFACE_INCLUDE_DIRECTORIES "${ESMF_INCLUDE_DIRECTORIES}"
         INTERFACE_LINK_LIBRARIES "${ESMF_INTERFACE_LINK_LIBRARIES}")
-
-  set_target_properties(ESMF::ESMC PROPERTIES
-        IMPORTED_LOCATION "${ESMF_LIBRARY_LOCATION}"
-        INTERFACE_INCLUDE_DIRECTORIES "${ESMC_INCLUDE_DIRECTORIES}"
-        INTERFACE_LINK_LIBRARIES "${ESMC_INTERFACE_LINK_LIBRARIES}")
 
 else()
   set(ESMF_FOUND FALSE CACHE BOOL "esmf.mk file NOT found" FORCE)

@@ -4,5 +4,7 @@ application:
   exe_name: esmx_basic
 
 components:
-  ESMX_COMP1:
-  ESMX_COMP2:
+  esmx_comp1:
+    build_type: none
+  esmx_comp2:
+    build_type: none
