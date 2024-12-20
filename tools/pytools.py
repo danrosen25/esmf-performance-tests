@@ -8,6 +8,7 @@ import sys
 import yaml
 import subprocess
 import datetime
+import hashlib
 
 def abort(message: str):
     sys.exit('\033[91mERROR: ' + message + '\033[0m')
@@ -69,6 +70,7 @@ class TestResults():
 class ESMFPerformanceTest():
     filepath: str = None
     esmfmkfile: str = None
+    esmfmkdigest: str = None
     name: str = None
     esmfconfig: dict = {}
     esmfvers: str = None
@@ -110,10 +112,13 @@ class ESMFPerformanceTest():
             abort('esmf.mk not found - ' + format(config["esmf"]))
         os.environ["ESMFMKFILE"] = self.esmfmkfile
         with open(self.esmfmkfile, "r") as file:
+            hasher = hashlib.shake_256()
             for line in file:
+                hasher.update(bytes(line, 'utf-8'))
                 if line.lstrip().startswith('ESMF_'):
                     key, value = line.split("=", maxsplit=1)
                     self.esmfconfig[key] = value.rstrip()
+        self.esmfmkdigest = hasher.hexdigest(4)
         self.esmfvers = (self.esmfconfig["ESMF_VERSION_MAJOR"] +
                          "." + self.esmfconfig["ESMF_VERSION_MINOR"] +
                          "." + self.esmfconfig["ESMF_VERSION_REVISION"])
@@ -132,7 +137,8 @@ class ESMFPerformanceTest():
         if "profile" in config:
             self.profile = config["profile"]
         # define directories
-        self.builddir = os.path.abspath(os.path.join("build", self.name))
+        self.builddir = os.path.abspath(os.path.join("build", self.esmfvers,
+                                                     self.esmfmkdigest))
         self.testdir = os.path.abspath(os.path.join("run", self.name))
         self.logdir = os.path.abspath(os.path.join("logs", self.name))
         self.tcfgdir = os.path.abspath(os.path.join(self.builddir, "testcfg"))
