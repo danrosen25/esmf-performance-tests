@@ -19,11 +19,56 @@ def error(message: str):
 def warning(message: str):
     print('\033[93mWARNING: ' + message + '\033[0m')
 
+class ESMFInstallation():
+    mkfile: str = None
+    mkdigest: str = None
+    config: dict = {}
+    vers: str = None
+
+    def __init__(self, esmfpath: str):
+        if os.path.basename(esmfpath) == 'esmf.mk':
+            self.mkfile = os.path.abspath(esmfpath)
+            if not os.path.exists(self.mkfile):
+                abort('esmf.mk file not found - ' + esmfpath)
+        else:
+            for root, dirs, files in os.walk(esmfpath):
+                if 'esmf.mk' in files:
+                    self.mkfile = os.path.join(root, 'esmf.mk')
+                    break
+            if self.mkfile is None:
+                abort('esmf.mk file not found - ' + esmfpath)
+        with open(self.mkfile, "r") as file:
+            hasher = hashlib.shake_256()
+            for line in file:
+                hasher.update(bytes(line, 'utf-8'))
+                if line.lstrip().startswith('ESMF_'):
+                    key, value = line.split("=", maxsplit=1)
+                    self.config[key] = value.rstrip()
+        self.mkdigest = hasher.hexdigest(4)
+        self.vers = (self.config["ESMF_VERSION_MAJOR"] +
+                     "." + self.config["ESMF_VERSION_MINOR"] +
+                     "." + self.config["ESMF_VERSION_REVISION"])
+        if 'F' in self.config["ESMF_VERSION_PUBLIC"]:
+            self.vers += '-dev'
+
+    def setenv(self):
+        os.environ["ESMFMKFILE"] = self.mkfile
+
+    def __str__(self):
+        msg = ("ESMF Build Information" +
+            "\n  Makefile Fragment: " + self.mkfile +
+            "\n  Version: " + self.config["ESMF_VERSION_STRING"] +
+            "\n  Git Version: " + self.config["ESMF_VERSION_STRING_GIT"] +
+            "\n  Public: " + self.config["ESMF_VERSION_PUBLIC"] +
+            "\n  Beta Snapshot: " + self.config["ESMF_VERSION_BETASNAPSHOT"] +
+            "\n")
+        return msg
+
 class TestResults():
     tests = []
-    def __init__(self, resfile: str, testsuite: dict, esmfvers: str):
-        self.append(resfile, testsuite, esmfvers)
-    def append(self, resfile: str, testsuite: dict, esmfvers: str):
+    def __init__(self, resfile: str, testsuite: dict, esmf: ESMFInstallation):
+        self.append(resfile, testsuite, esmf)
+    def append(self, resfile: str, testsuite: dict, esmf: ESMFInstallation):
         tree = ET.parse(resfile)
         root = tree.getroot()
         hostname = root.get('hostname')
@@ -33,7 +78,7 @@ class TestResults():
             testcfg = testsuite[testname]
             self.tests.append({"name": testname,
                                "hostname": hostname,
-                               "esmfvers": esmfvers,
+                               "esmfvers": esmf.vers,
                                "timestamp": timestamp,
                                "mpi": format(testcfg["mpi"]),
                                "mpinp": testcfg["mpinp"],
@@ -69,11 +114,8 @@ class TestResults():
 
 class ESMFPerformanceTest():
     filepath: str = None
-    esmfmkfile: str = None
-    esmfmkdigest: str = None
     name: str = None
-    esmfconfig: dict = {}
-    esmfvers: str = None
+    esmf: ESMFInstallation = None
     profile: bool = False
     builddir: str = None
     testdir: str = None
@@ -94,36 +136,14 @@ class ESMFPerformanceTest():
             self.name = os.path.basename(self.filepath)
         else:
             self.name = config["name"]
-        # locate esmf.mk file and read esmf configuration
+        # set up esmf installation
         if "esmf" not in config:
             if os.environ.get('ESMFMKFILE') is None:
                 abort('[esmf] not found - ' + self.filepath)
             else:
                 warning('Using ESMFMKFILE environment variable')
-                self.esmfmkfile = os.environ['ESMFMKFILE']
-        else:
-            if os.path.basename(config["esmf"]) == 'esmf.mk':
-                self.esmfmkfile = os.path.abspath(config["esmf"])
-            else:
-                for root, dirs, files in os.walk(config["esmf"]):
-                    if 'esmf.mk' in files:
-                        self.esmfmkfile = os.path.join(root, 'esmf.mk')
-        if self.esmfmkfile is None:
-            abort('esmf.mk not found - ' + format(config["esmf"]))
-        os.environ["ESMFMKFILE"] = self.esmfmkfile
-        with open(self.esmfmkfile, "r") as file:
-            hasher = hashlib.shake_256()
-            for line in file:
-                hasher.update(bytes(line, 'utf-8'))
-                if line.lstrip().startswith('ESMF_'):
-                    key, value = line.split("=", maxsplit=1)
-                    self.esmfconfig[key] = value.rstrip()
-        self.esmfmkdigest = hasher.hexdigest(4)
-        self.esmfvers = (self.esmfconfig["ESMF_VERSION_MAJOR"] +
-                         "." + self.esmfconfig["ESMF_VERSION_MINOR"] +
-                         "." + self.esmfconfig["ESMF_VERSION_REVISION"])
-        if 'F' in self.esmfconfig["ESMF_VERSION_PUBLIC"]:
-            self.esmfvers += '-dev'
+                config["esmf"] = os.environ['ESMFMKFILE']
+        self.esmf = ESMFInstallation(config["esmf"])
         # read testsuite
         if "testsuite" not in config:
             abort('[testsuite] not found - ' + self.filepath)
@@ -137,8 +157,8 @@ class ESMFPerformanceTest():
         if "profile" in config:
             self.profile = config["profile"]
         # define directories
-        self.builddir = os.path.abspath(os.path.join("build", self.esmfvers,
-                                                     self.esmfmkdigest))
+        self.builddir = os.path.abspath(os.path.join("build", self.esmf.vers,
+                                                     self.esmf.mkdigest))
         self.testdir = os.path.abspath(os.path.join("run", self.name))
         self.logdir = os.path.abspath(os.path.join("logs", self.name))
         self.tcfgdir = os.path.abspath(os.path.join(self.builddir, "testcfg"))
@@ -173,16 +193,6 @@ class ESMFPerformanceTest():
                     self.testsuite[newtest] = options.copy()
                     self.testsuite[newtest]["repeat"] = 0
                 del self.testsuite[test]
-
-    def esmf_vers_info(self):
-        msg = ("ESMF Build Information" +
-            "\n  Makefile Fragment: " + self.esmfmkfile +
-            "\n  Version: " + self.esmfconfig["ESMF_VERSION_STRING"] +
-            "\n  Git Version: " + self.esmfconfig["ESMF_VERSION_STRING_GIT"] +
-            "\n  Public: " + self.esmfconfig["ESMF_VERSION_PUBLIC"] +
-            "\n  Beta Snapshot: " + self.esmfconfig["ESMF_VERSION_BETASNAPSHOT"] +
-            "\n")
-        return msg
 
     def write_cmake(self, test: dict):
         name = test[0]
@@ -219,6 +229,7 @@ class ESMFPerformanceTest():
             cmakef.write(output)
 
     def execute_tests(self):
+        self.esmf.setenv()
         os.makedirs(self.builddir, exist_ok=True)
         os.makedirs(self.testdir, exist_ok=True)
         os.makedirs(self.tcfgdir, exist_ok=True)
@@ -242,7 +253,7 @@ class ESMFPerformanceTest():
             os.environ["ESMF_RUNTIME_PROFILE"] = "ON"
             os.environ["ESMF_RUNTIME_PROFILE_OUTPUT"] = "SUMMARY"
         with open(logfpath, "w") as logf:
-            logf.write(self.esmf_vers_info())
+            logf.write(format(self.esmf))
             logf.flush()
             cp = subprocess.run(["cmake", self.testsrc],
                 stdout=logf, stderr=logf, cwd=self.builddir)
@@ -258,7 +269,7 @@ class ESMFPerformanceTest():
                 error('Test failure, see ' + format(logf.name))
         print("FINISHED: " + self.name + " (" + format(logf.name) + ")")
         # read and print test results
-        results = TestResults(resfpath, self.testsuite, self.esmfvers)
+        results = TestResults(resfpath, self.testsuite, self.esmf)
         print(results)
 
 def main(argv):
