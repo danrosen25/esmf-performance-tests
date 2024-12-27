@@ -64,6 +64,75 @@ class ESMFInstallation():
             "\n")
         return msg
 
+class TestCase():
+    name: str = None
+    cmakef: str = None
+    tdir: str = None
+    options: dict = {}
+    executable: str = None
+    mpi: bool = True
+    mpinp: str = "1"
+    timeout: int = 0
+    arguments: str = None
+    inputdata: str = None
+
+    def __init__(self, name: str, options: dict, rundir: str):
+        self.name = name
+        self.cmakef = self.name + ".cmake"
+        self.tdir = os.path.abspath(os.path.join(rundir, self.name))
+        if options is None:
+            abort('test options missing - ' + self.name)
+        if "executable" not in options:
+            abort('[executable] missing - ' + self.name)
+        else:
+            self.executable = str(options["executable"])
+        if "mpi" in options:
+            self.mpi = bool(options["mpi"])
+        if self.mpi:
+            if "mpinp" in options:
+                self.mpinp = str(options["mpinp"])
+        else:
+            self.mpinp = "N/A"
+        if "timeout" in options:
+            self.timeout = int(options["timeout"])
+        if "arguments" in options:
+            self.arguments = str(options["arguments"])
+        if "inputdata" in options:
+            self.inputdata = str(options["inputdata"])
+
+    def write_cmake(self, tcfgdir: str):
+        # generate <test>.cmake file
+        output = '# name: ' + self.name + '\n\n'
+        output += 'list(APPEND TESTLIST ' + self.name + ')\n'
+        output += 'file(REMOVE_RECURSE "' + self.tdir + '")\n'
+        output += 'file(MAKE_DIRECTORY "' + self.tdir + '")\n'
+        if self.inputdata is not None:
+            inputdata = os.path.abspath(self.inputdata)
+            output += ('file(COPY "' + inputdata + '"\n' +
+                      '\tDESTINATION "' + self.tdir + '")\n')
+        if self.mpi:
+            output += 'if(NOT MPI_Fortran_FOUND)\n'
+            output += '\tMESSAGE(ERROR "' + self.name + ' requires MPI")\n'
+            output += 'endif()\n'
+            output += 'add_test(NAME ' + self.name + ' COMMAND\n'
+            output += ('\t${MPIEXEC}' +
+                       ' ${MPIEXEC_NUMPROC_FLAG} ' + self.mpinp +
+                       ' $<TARGET_FILE:' + self.executable + '>\n')
+        else:
+            output += 'add_test(NAME ' + self.name + ' COMMAND\n'
+            output += '\t$<TARGET_FILE:' + self.executable + '>\n'
+        if self.arguments is not None:
+            output += '\t' + self.arguments + '\n'
+        output += '\tWORKING_DIRECTORY ' + self.tdir + ')\n'
+        output += ('set_tests_properties(' + self.name + ' PROPERTIES' +
+                   ' TIMEOUT ' + str(self.timeout) + ')\n')
+        fpath = os.path.abspath(os.path.join(tcfgdir, self.cmakef))
+        with open(fpath, "w") as cmakef:
+            cmakef.write(output)
+
+    def __str__(self):
+        return self.name
+
 class TestResults():
     tests = []
     def __init__(self, resfile: str, testsuite: dict, esmf: ESMFInstallation):
@@ -75,13 +144,12 @@ class TestResults():
         timestamp = root.get('timestamp')
         for t in root.findall('testcase'):
             testname = t.get('name')
-            testcfg = testsuite[testname]
             self.tests.append({"name": testname,
                                "hostname": hostname,
                                "esmfvers": esmf.vers,
                                "timestamp": timestamp,
-                               "mpi": format(testcfg["mpi"]),
-                               "mpinp": testcfg["mpinp"],
+                               "mpi": testsuite[testname].mpi,
+                               "mpinp": testsuite[testname].mpinp,
                                "status": t.get('status'),
                                "time": float(t.get('time'))})
     def __str__(self):
@@ -121,10 +189,10 @@ class ESMFPerformanceTest():
     testdir: str = None
     logdir: str = None
     testsrc: str = os.path.join(os.getcwd(),"src")
-    testsuite: dict = None
+    testsuite: TestCase = {}
 
     def __init__(self, filepath: str):
-        self.filepath = format(filepath)
+        self.filepath = str(filepath)
         if not os.path.exists(self.filepath):
             abort('File not found - ' + self.filepath)
         with open(self.filepath) as file:
@@ -144,89 +212,30 @@ class ESMFPerformanceTest():
                 warning('Using ESMFMKFILE environment variable')
                 config["esmf"] = os.environ['ESMFMKFILE']
         self.esmf = ESMFInstallation(config["esmf"])
-        # read testsuite
-        if "testsuite" not in config:
-            abort('[testsuite] not found - ' + self.filepath)
-        else:
-            self.testsuite = config["testsuite"]
-        if self.testsuite is None:
-            abort('[testsuite] is empty - ' + self.filepath)
-        else:
-            self.set_default_testopts()
-        # read profile
-        if "profile" in config:
-            self.profile = config["profile"]
         # define directories
         self.builddir = os.path.abspath(os.path.join("build", self.esmf.vers,
                                                      self.esmf.mkdigest))
         self.testdir = os.path.abspath(os.path.join("run", self.name))
         self.logdir = os.path.abspath(os.path.join("logs", self.name))
         self.tcfgdir = os.path.abspath(os.path.join(self.builddir, "testcfg"))
-
-    def set_default_testopts(self):
-        for test in list(self.testsuite):
-            options = self.testsuite[test]
-            if options is None:
-                abort('test options missing - ' + test + ' - ' + self.filepath)
-            if "executable" not in options:
-                abort('[executable] missing - ' + test + ' - ' + self.filepath)
-            if "mpi" not in options:
-                options["mpi"] = True
-            if options["mpi"]:
-                if "mpinp" not in options:
-                    options["mpinp"] = "1"
-                else:
-                    options["mpinp"] = str(options["mpinp"])
-            else:
-                options["mpinp"] = "N/A"
-            if "timeout" not in options:
-                options["timeout"] = 0
-            if "arguments" not in options:
-                options["arguments"] = None
-            if "inputdata" not in options:
-                options["inputdata"] = None
-            if "repeat" not in options:
-                options["repeat"] = 0
-            elif options["repeat"] > 0:
-                for i in range(options["repeat"]):
-                    newtest = format(test) + "-" + format(i+1)
-                    self.testsuite[newtest] = options.copy()
-                    self.testsuite[newtest]["repeat"] = 0
-                del self.testsuite[test]
-
-    def write_cmake(self, test: dict):
-        name = test[0]
-        options = test[1]
-        cmakef = name + ".cmake"
-        cmakefpath = os.path.abspath(os.path.join(self.tcfgdir, cmakef))
-        tdir = os.path.abspath(os.path.join(self.testdir, name))
-        # generate <test>.cmake file
-        output = '# name: ' + name + '\n\n'
-        output += 'list(APPEND TESTLIST ' + name + ')\n'
-        output += 'file(REMOVE_RECURSE "' + tdir + '")\n'
-        output += 'file(MAKE_DIRECTORY "' + tdir + '")\n'
-        if options["inputdata"] is not None:
-            inputdata = os.path.abspath(options["inputdata"])
-            output += ('file(COPY "' + inputdata + '"\n' +
-                      '\tDESTINATION "' + tdir + '")\n')
-        if options["mpi"]:
-            output += 'if(NOT MPI_Fortran_FOUND)\n'
-            output += '\tMESSAGE(ERROR "' + name + ' requires MPI")\n'
-            output += 'endif()\n'
-            output += 'add_test(NAME ' + name + ' COMMAND\n'
-            output += ('\t${MPIEXEC}' +
-                       ' ${MPIEXEC_NUMPROC_FLAG} ' + options["mpinp"] +
-                       ' $<TARGET_FILE:' + options["executable"] + '>\n')
+        # read testsuite
+        if "testsuite" not in config:
+            abort('[testsuite] not found - ' + self.filepath)
+        elif config["testsuite"] is None:
+            abort('[testsuite] is empty - ' + self.filepath)
         else:
-            output += 'add_test(NAME ' + name + ' COMMAND\n'
-            output += '\t$<TARGET_FILE:' + options["executable"] + '>\n'
-        if options["arguments"] is not None:
-            output += '\t' + options["arguments"] + '\n'
-        output += '\tWORKING_DIRECTORY ' + tdir + ')\n'
-        output += ('set_tests_properties(' + name + ' PROPERTIES' +
-                   ' TIMEOUT ' + format(options["timeout"]) + ')\n')
-        with open(cmakefpath, "w") as cmakef:
-            cmakef.write(output)
+            for tname, opts in config["testsuite"].items():
+                if "repeat" in opts:
+                    for i in range(opts["repeat"]):
+                        newtname = tname + "-" + str(i + 1)
+                        self.testsuite[newtname] = TestCase(newtname,
+                            opts, self.testdir)
+                else:
+                    self.testsuite[tname] = TestCase(tname,
+                        opts, self.testdir)
+        # read profile
+        if "profile" in config:
+            self.profile = config["profile"]
 
     def execute_tests(self):
         self.esmf.setenv()
@@ -237,8 +246,6 @@ class ESMFPerformanceTest():
         for filename in os.listdir(self.tcfgdir):
             filepath = os.path.join(self.tcfgdir, filename)
             os.remove(filepath)
-        for test in self.testsuite.items():
-            self.write_cmake(test)
         logfpath = "{}/output-latest".format(self.logdir)
         resfpath = "{}/results-latest.xml".format(self.logdir)
         if os.path.exists(logfpath):
@@ -252,22 +259,24 @@ class ESMFPerformanceTest():
         if self.profile:
             os.environ["ESMF_RUNTIME_PROFILE"] = "ON"
             os.environ["ESMF_RUNTIME_PROFILE_OUTPUT"] = "SUMMARY"
+        for tname in self.testsuite:
+            self.testsuite[tname].write_cmake(self.tcfgdir)
         with open(logfpath, "w") as logf:
-            logf.write(format(self.esmf))
+            logf.write(str(self.esmf))
             logf.flush()
             cp = subprocess.run(["cmake", self.testsrc],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                error('CMake failure, see ' + format(logf.name))
+                error('CMake failure, see ' + str(logf.name))
             cp = subprocess.run(["make"],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                error('Build failure, see ' + format(logf.name))
+                error('Build failure, see ' + str(logf.name))
             cp = subprocess.run(["ctest", "--output-junit", resfpath],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                error('Test failure, see ' + format(logf.name))
-        print("FINISHED: " + self.name + " (" + format(logf.name) + ")")
+                error('Test failure, see ' + str(logf.name))
+        print("FINISHED: " + self.name + " (" + str(logf.name) + ")")
         # read and print test results
         results = TestResults(resfpath, self.testsuite, self.esmf)
         print(results)
