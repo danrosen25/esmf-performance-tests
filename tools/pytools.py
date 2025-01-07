@@ -9,6 +9,7 @@ import yaml
 import subprocess
 import datetime
 import hashlib
+import shutil
 
 def abort(message: str):
     sys.exit('\033[91mERROR: ' + message + '\033[0m')
@@ -74,7 +75,7 @@ class TestCase():
     mpinp: str = "1"
     timeout: int = 0
     arguments: str = None
-    inputdata: str = None
+    inputdata: str = []
 
     def __init__(self, name: str, options: dict, rundir: str):
         self.name = name
@@ -98,18 +99,12 @@ class TestCase():
         if "arguments" in options:
             self.arguments = str(options["arguments"])
         if "inputdata" in options:
-            self.inputdata = str(options["inputdata"])
+            self.inputdata.append(str(options["inputdata"]))
 
     def write_cmake(self, tcfgdir: str):
         # generate <test>.cmake file
         output = '# name: ' + self.name + '\n\n'
         output += 'list(APPEND TESTLIST ' + self.name + ')\n'
-        output += 'file(REMOVE_RECURSE "' + self.tdir + '")\n'
-        output += 'file(MAKE_DIRECTORY "' + self.tdir + '")\n'
-        if self.inputdata is not None:
-            inputdata = os.path.abspath(self.inputdata)
-            output += ('file(COPY "' + inputdata + '"\n' +
-                      '\tDESTINATION "' + self.tdir + '")\n')
         if self.mpi:
             output += 'if(NOT MPI_Fortran_FOUND)\n'
             output += '\tMESSAGE(ERROR "' + self.name + ' requires MPI")\n'
@@ -130,6 +125,15 @@ class TestCase():
         with open(fpath, "w") as cmakef:
             cmakef.write(output)
 
+    def clean_tdir(self):
+        if os.path.exists(self.tdir):
+            shutil.rmtree(self.tdir)
+        os.makedirs(self.tdir, exist_ok=True)
+
+    def setup_input(self):
+        for inputsrc in self.inputdata:
+            shutil.copy(inputsrc, self.tdir)
+
     def __str__(self):
         return self.name
 
@@ -148,34 +152,43 @@ class TestResults():
                                "hostname": hostname,
                                "esmfvers": esmf.vers,
                                "timestamp": timestamp,
-                               "mpi": testsuite[testname].mpi,
+                               "mpi": str(testsuite[testname].mpi)[0],
                                "mpinp": testsuite[testname].mpinp,
                                "status": t.get('status'),
                                "time": float(t.get('time'))})
     def __str__(self):
+        wd = [ len('name'),
+               len('hostname'),
+               len('esmf'),
+               len('mpinp')]
+        for t in self.tests:
+            wd[0] = max(wd[0], len(f"{t['name']}"))
+            wd[1] = max(wd[1], len(f"{t['hostname']}"))
+            wd[2] = max(wd[2], len(f"{t['esmfvers']}"))
+            wd[3] = max(wd[3], len(f"{t['mpinp']}"))
         res = (f"| " +
-               f"{'name':30} | " +
-               f"{'hostname':12} | " +
-               f"{'esmf':10} | " +
-               f"{'mpi':5} | " +
-               f"{'mpinp':6} | " +
+               f"{'name':{wd[0]}} | " +
+               f"{'hostname':{wd[1]}} | " +
+               f"{'esmf':{wd[2]}} | " +
+               f"{'mpi':3} | " +
+               f"{'mpinp':{wd[3]}} | " +
                f"{'status':6} | " +
                f"{'time (s)':9} |")
         res += ("\n| " +
-                "-" * 30 + " | " +
-                "-" * 12 + " | " +
-                "-" * 10 + " | " +
-                "-" * 5 + " | " +
-                "-" * 6 + " | " +
+                "-" * wd[0] + " | " +
+                "-" * wd[1] + " | " +
+                "-" * wd[2] + " | " +
+                "-" * 3 + " | " +
+                "-" * wd[3] + " | " +
                 "-" * 6 + " | " +
                 "-" * 9 + " |")
         for t in self.tests:
             res += (f"\n| " +
-                   f"{t['name']:30} | " +
-                   f"{t['hostname']:12} | " +
-                   f"{t['esmfvers']:10} | " +
-                   f"{t['mpi']:5} | " +
-                   f"{t['mpinp']:6} | " +
+                   f"{t['name']:{wd[0]}} | " +
+                   f"{t['hostname']:{wd[1]}} | " +
+                   f"{t['esmfvers']:{wd[2]}} | " +
+                   f"{t['mpi']:3} | " +
+                   f"{t['mpinp']:{wd[3]}} | " +
                    f"{t['status']:6} | " +
                    f"{t['time']:.3E} |")
         return res
@@ -225,6 +238,7 @@ class ESMFPerformanceTest():
             abort('[testsuite] is empty - ' + self.filepath)
         else:
             for tname, opts in config["testsuite"].items():
+                tname = tname.translate({ord(i): '_' for i in '/\\*'})
                 if "repeat" in opts:
                     for i in range(opts["repeat"]):
                         newtname = tname + "-" + str(i + 1)
@@ -261,6 +275,8 @@ class ESMFPerformanceTest():
             os.environ["ESMF_RUNTIME_PROFILE_OUTPUT"] = "SUMMARY"
         for tname in self.testsuite:
             self.testsuite[tname].write_cmake(self.tcfgdir)
+            self.testsuite[tname].clean_tdir()
+            self.testsuite[tname].setup_input()
         with open(logfpath, "w") as logf:
             logf.write(str(self.esmf))
             logf.flush()
@@ -282,7 +298,6 @@ class ESMFPerformanceTest():
         print(results)
 
 def main(argv):
-
     # read input arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--ifile' , help='Input EPT file', required=True)
@@ -292,5 +307,7 @@ def main(argv):
     ept.execute_tests()
 
 if __name__ == "__main__":
+    if sys.version_info < (3, 9):
+        raise Exception("Python 3.9 or higher is required.")
     main(sys.argv[1:])
 
