@@ -7,12 +7,32 @@ import os
 import sys
 import yaml
 import subprocess
-import datetime
+from datetime import datetime as dt
 import hashlib
 import shutil
+import re
 
 def abort(message: str):
     sys.exit('\033[91mERROR: ' + message + '\033[0m')
+
+def abortf(message: str, fpath: str, pos: int):
+    lcount = 1
+    ccount = 1
+    index = 0
+    with open(fpath, 'r') as file:
+        while index < pos:
+            char = file.read(1)
+            if not char:
+                break
+            if char == '\n':
+                ccount = 0
+                lcount += 1
+            ccount += 1
+            index += 1
+    sys.exit('\033[91mERROR: ' + message + ' (' +
+        fpath + ':' + str(lcount) + ':' + str(ccount) + ')' +
+        '\033[0m'
+    )
 
 def error(message: str):
     print('\033[91mERROR: ' + message + '\033[0m')
@@ -65,6 +85,114 @@ class ESMFInstallation():
             "\n")
         return msg
 
+class Input():
+    itype: str = None
+    infile: str = None
+    outfile: str = None
+    vardict: dict = None
+
+    def __init__(self, settings: dict):
+        if 'type' in settings:
+            self.itype = settings['type']
+        else:
+            self.itype = 'copy'
+        if self.itype not in ['copy', 'template']:
+            abort("invalid inputdata type - " + self.itype)
+        if 'infile' not in settings:
+            abort('inputdata requires infile')
+        else:
+            self.infile = str(settings['infile'])
+        if 'outfile' not in settings:
+            self.outfile = os.path.basename(self.infile)
+        else:
+            self.outfile = str(settings['outfile'])
+        if 'vars' in settings:
+            self.vardict = settings['vars']
+        else:
+            self.vardict = {}
+
+    @classmethod
+    def from_string(cls, fpath: str):
+        return cls({'type': 'copy', 'infile': fpath})
+
+    def setup(self, outdir: str):
+        if self.itype == 'copy':
+            self.copy_file(outdir)
+        elif self.itype == 'template':
+            self.fill_template(outdir)
+
+    def copy_file(self, outdir: str):
+        if os.path.isfile(self.infile):
+            shutil.copy(self.infile, os.path.join(outdir, self.outfile))
+        elif os.path.isdir(self.infile):
+            shutil.copytree(self.infile, os.path.join(outdir, self.outfile))
+
+    def fill_template(self, outdir: str):
+        tpattern = re.compile(
+            r"(?<!\\)\{@\s+" +
+            r"(?P<type>[^\s]*)\s+" +
+            r"(?P<line>.*?)\s*" +
+            r"(?<!\\)@\}"
+        )
+        dpattern = re.compile(
+            r"(?<!\\):-"
+        )
+        with open(self.infile, "r") as tfile:
+            template = tfile.read()
+        with open(os.path.join(outdir, self.outfile), 'w') as ofile:
+            index = 0
+            eof = len(template)
+            match = tpattern.search(template, index)
+            while match is not None:
+                if match.start() > index:
+                    ofile.write(template[index:match.start()])
+                index = match.start()
+                typ = match.group("type")
+                line = match.group("line")
+                if typ == 'var':
+                    if len(line) == 0:
+                        abortf("var - missing name", self.infile, index)
+                    elif dpattern.search(line):
+                        var, dflt = dpattern.split(line, maxsplit=1)
+                    else:
+                        var = line
+                        dflt = None
+                    if var in self.vardict:
+                        ofile.write(str(self.vardict[var]))
+                    elif dflt is not None:
+                        ofile.write(str(dflt))
+                    else:
+                        abortf("var - missing value", self.infile, index)
+                elif typ == 'env':
+                    if len(line) == 0:
+                        abortf("env - missing name", self.infile, index)
+                    elif dpattern.search(line):
+                        var, dflt = dpattern.split(line, maxsplit=1)
+                    else:
+                        var = line
+                        dflt = None
+                    if var in os.environ:
+                        ofile.write(os.environ[var])
+                    elif dflt is not None:
+                        ofile.write(str(dflt))
+                    else:
+                        abortf("env - missing value", self.infile, index)
+                elif typ == 'username':
+                    ofile.write(os.getlogin())
+                elif typ == 'template':
+                    ofile.write(os.path.abspath(self.infile))
+                elif typ == 'date':
+                    if len(line) == 0:
+                        ofile.write(dt.now().strftime("%Y-%m-%d"))
+                    else:
+                        ofile.write(dt.now().strftime(line))
+                else:
+                    abortf(typ + " - unknown type", self.infile, index)
+                index = match.end()
+                match = tpattern.search(template, index)
+            if eof > index:
+                ofile.write(template[index:eof])
+
 class TestCase():
     name: str = None
     cmakef: str = None
@@ -75,7 +203,7 @@ class TestCase():
     mpinp: str = "1"
     timeout: int = 0
     arguments: str = None
-    inputdata: str = []
+    inputdata: Input = []
 
     def __init__(self, name: str, options: dict, rundir: str):
         self.name = name
@@ -99,7 +227,20 @@ class TestCase():
         if "arguments" in options:
             self.arguments = str(options["arguments"])
         if "inputdata" in options:
-            self.inputdata.append(str(options["inputdata"]))
+            if isinstance(options["inputdata"], list):
+                for inputitem in options["inputdata"]:
+                    if isinstance(inputitem, dict):
+                        self.inputdata.append(Input(inputitem))
+                    elif isinstance(inputitem, str):
+                        self.inputdata.append(Input.from_string(inputitem))
+                    else:
+                        abort("inputdata format not supported - " + self.name)
+            elif isinstance(options["inputdata"], dict):
+                self.inputdata.append(Input(options["inputdata"]))
+            elif isinstance(options["inputdata"], str):
+                self.inputdata.append(Input.from_string(options["inputdata"]))
+            else:
+                abort("inputdata format not supported - " + self.name)
 
     def write_cmake(self, tcfgdir: str):
         # generate <test>.cmake file
@@ -131,8 +272,8 @@ class TestCase():
         os.makedirs(self.tdir, exist_ok=True)
 
     def setup_input(self):
-        for inputsrc in self.inputdata:
-            shutil.copy(inputsrc, self.tdir)
+        for inputitem in self.inputdata:
+            inputitem.setup(self.tdir)
 
     def __str__(self):
         return self.name
@@ -264,11 +405,11 @@ class ESMFPerformanceTest():
         resfpath = "{}/results-latest.xml".format(self.logdir)
         if os.path.exists(logfpath):
             ts = os.path.getmtime(logfpath)
-            tsiso = datetime.datetime.fromtimestamp(ts).replace(microsecond=0).isoformat()
+            tsiso = dt.fromtimestamp(ts).replace(microsecond=0).isoformat()
             os.rename(logfpath, logfpath.replace("latest", tsiso))
         if os.path.exists(resfpath):
             ts = os.path.getmtime(resfpath)
-            tsiso = datetime.datetime.fromtimestamp(ts).replace(microsecond=0).isoformat()
+            tsiso = dt.fromtimestamp(ts).replace(microsecond=0).isoformat()
             os.rename(resfpath, resfpath.replace("latest", tsiso))
         if self.profile:
             os.environ["ESMF_RUNTIME_PROFILE"] = "ON"
