@@ -24,7 +24,10 @@ testsuite:
         mpinp: 4
     reconcile_totloverlap:
         executable: esmf_reconcile
-        inputdata: {type: template, infile: templates/reconcile.cfg}
+        inputdata:
+            type: template
+            infile: templates/reconcile.cfg
+            vars: { compCount: 2, iterationCount: 1, fieldCount: 100 }
         arguments: reconcile.cfg
         timeout: 60
         mpinp: 4
