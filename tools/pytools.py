@@ -41,10 +41,6 @@ def warning(message: str):
     print('\033[93mWARNING: ' + message + '\033[0m')
 
 class ESMFInstallation():
-    mkfile: str = None
-    mkdigest: str = None
-    config: dict = {}
-    vers: str = None
 
     def __init__(self, esmfpath: str):
         if os.path.basename(esmfpath) == 'esmf.mk':
@@ -58,6 +54,7 @@ class ESMFInstallation():
                     break
             if self.mkfile is None:
                 abort('esmf.mk file not found - ' + esmfpath)
+        self.config = {}
         with open(self.mkfile, "r") as file:
             hasher = hashlib.shake_256()
             for line in file:
@@ -86,10 +83,6 @@ class ESMFInstallation():
         return msg
 
 class Input():
-    itype: str = None
-    infile: str = None
-    outfile: str = None
-    vardict: dict = None
 
     def __init__(self, settings: dict):
         if 'type' in settings:
@@ -193,17 +186,15 @@ class Input():
             if eof > index:
                 ofile.write(template[index:eof])
 
+    def __str__(self):
+        msg = ("Input Information" +
+            "\n  type: " + self.itype +
+            "\n  infile: " + self.infile +
+            "\n  outfile: " + self.outfile +
+            "\n")
+        return msg
+
 class TestCase():
-    name: str = None
-    cmakef: str = None
-    tdir: str = None
-    options: dict = {}
-    executable: str = None
-    mpi: bool = True
-    mpinp: str = "1"
-    timeout: int = 0
-    arguments: str = None
-    inputdata: Input = []
 
     def __init__(self, name: str, options: dict, rundir: str):
         self.name = name
@@ -217,15 +208,24 @@ class TestCase():
             self.executable = str(options["executable"])
         if "mpi" in options:
             self.mpi = bool(options["mpi"])
+        else:
+            self.mpi = True
         if self.mpi:
             if "mpinp" in options:
                 self.mpinp = str(options["mpinp"])
+            else:
+                self.mpinp = "1"
         else:
             self.mpinp = "N/A"
         if "timeout" in options:
             self.timeout = int(options["timeout"])
+        else:
+            self.timeout = 0
         if "arguments" in options:
             self.arguments = str(options["arguments"])
+        else:
+            self.arguments = None
+        self.inputdata = []
         if "inputdata" in options:
             if isinstance(options["inputdata"], list):
                 for inputitem in options["inputdata"]:
@@ -279,9 +279,11 @@ class TestCase():
         return self.name
 
 class TestResults():
-    tests = []
+
     def __init__(self, resfile: str, testsuite: dict, esmf: ESMFInstallation):
+        self.tests = []
         self.append(resfile, testsuite, esmf)
+
     def append(self, resfile: str, testsuite: dict, esmf: ESMFInstallation):
         tree = ET.parse(resfile)
         root = tree.getroot()
@@ -335,18 +337,11 @@ class TestResults():
         return res
 
 class ESMFPerformanceTest():
-    filepath: str = None
-    name: str = None
-    esmf: ESMFInstallation = None
-    profile: bool = False
-    builddir: str = None
-    testdir: str = None
-    logdir: str = None
-    testsrc: str = os.path.join(os.getcwd(),"src")
-    testsuite: TestCase = {}
 
     def __init__(self, filepath: str):
         self.filepath = str(filepath)
+        self.testsrc = os.path.join(os.getcwd(),"src")
+        self.testsuite = {}
         if not os.path.exists(self.filepath):
             abort('File not found - ' + self.filepath)
         with open(self.filepath) as file:
@@ -391,6 +386,8 @@ class ESMFPerformanceTest():
         # read profile
         if "profile" in config:
             self.profile = config["profile"]
+        else:
+            self.profile = False
 
     def execute_tests(self):
         self.esmf.setenv()
