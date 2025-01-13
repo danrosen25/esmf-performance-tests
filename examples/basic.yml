@@ -12,20 +12,20 @@ testsuite:
         mpi: False
     nuopc_basic:
         executable: nuopc_basic
-        inputdata: input/nuopcBasic.cfg
-        arguments: nuopcBasic.cfg
+        inputdata: {type: template, infile: templates/nuopc.cfg}
+        arguments: nuopc.cfg
         timeout: 60
         mpinp: 4
     esmx_basic:
         executable: esmx_basic
-        inputdata: input/esmxRunBasic.yml
-        arguments: esmxRunBasic.yml
+        inputdata: {type: template, infile: templates/esmx.yml}
+        arguments: esmx.yml
         timeout: 60
         mpinp: 4
     reconcile_totloverlap:
         executable: esmf_reconcile
-        inputdata: input/reconcile_totaloverlap_2cmp200fld.cfg
-        arguments: reconcile_totaloverlap_2cmp200fld.cfg
+        inputdata: {type: template, infile: templates/reconcile.cfg}
+        arguments: reconcile.cfg
         timeout: 60
         mpinp: 4
     reconcile_2575splt:
