@@ -119,6 +119,8 @@ class Input():
             shutil.copy(self.infile, os.path.join(outdir, self.outfile))
         elif os.path.isdir(self.infile):
             shutil.copytree(self.infile, os.path.join(outdir, self.outfile))
+        else:
+            abort("copy - missing file " + self.infile)
 
     def fill_template(self, outdir: str):
         tpattern = re.compile(
