@@ -1,0 +1,90 @@
+# Basic YAML Test Suite
+
+name: "reconcile-mpi65280np"
+# esmf: <path_to_esmf>
+profile: on
+
+define: &esmf_reconcile
+  executable: esmf_reconcile
+  arguments: reconcile.cfg
+  timeout: 3600
+  mpinp: 65280
+
+define: &reconcile_template
+  type: template
+  infile: templates/reconcile.cfg
+  outfile: reconcile.cfg
+
+testsuite:
+    totloverlap_2cmp100fld:
+        <<: *esmf_reconcile
+        inputdata:
+            <<: *reconcile_template
+            vars: { compCount: 2, fieldCount: 100 }
+    totloverlap_2cmp200fld:
+        <<: *esmf_reconcile
+        inputdata:
+            <<: *reconcile_template
+            vars: { compCount: 2, fieldCount: 200 }
+    totloverlap_6cmp100fld:
+        <<: *esmf_reconcile
+        inputdata:
+            <<: *reconcile_template
+            vars: { compCount: 6, fieldCount: 100 }
+    totloverlap_6cmp200fld:
+        <<: *esmf_reconcile
+        inputdata:
+            <<: *reconcile_template
+            vars: { compCount: 6, fieldCount: 200 }
+    2575spilt_2cmp100fld:
+        <<: *esmf_reconcile
+        inputdata:
+            <<: *reconcile_template
+            vars: {
+                compCount: 2, fieldCount: 100,
+                relBounds-01: 0.00 0.25, relBounds-02: 0.25 1.0
+            }
+    2575spilt_2cmp200fld:
+        <<: *esmf_reconcile
+        inputdata:
+            <<: *reconcile_template
+            vars: {
+                compCount: 2, fieldCount: 200,
+                relBounds-01: 0.00 0.25, relBounds-02: 0.25 1.0
+            }
+    partoverlap_2cmp100fld:
+        <<: *esmf_reconcile
+        inputdata:
+            <<: *reconcile_template
+            vars: {
+                compCount: 2, fieldCount: 100,
+                relBounds-01: 0 0.6, relBounds-02: 0.4 1.0
+            }
+    partoverlap_2cmp200fld:
+        <<: *esmf_reconcile
+        inputdata:
+            <<: *reconcile_template
+            vars: {
+                compCount: 2, fieldCount: 200,
+                relBounds-01: 0 0.6, relBounds-02: 0.4 1.0
+            }
+    partoverlap_6cmp100fld:
+        <<: *esmf_reconcile
+        inputdata:
+            <<: *reconcile_template
+            vars: {
+                compCount: 6, fieldCount: 100,
+                relBounds-01: 0.0 0.2, relBounds-02: 0.1 0.3,
+                relBounds-03: 0.2 0.5, relBounds-04: 0.4 0.6,
+                relBounds-05: 0.5 1.0, relBounds-06: 0.6 1.0
+            }
+    partoverlap_6cmp200fld:
+        <<: *esmf_reconcile
+        inputdata:
+            <<: *reconcile_template
+            vars: {
+                compCount: 6, fieldCount: 200,
+                relBounds-01: 0.0 0.2, relBounds-02: 0.1 0.3,
+                relBounds-03: 0.2 0.5, relBounds-04: 0.4 0.6,
+                relBounds-05: 0.5 1.0, relBounds-06: 0.6 1.0
+            }

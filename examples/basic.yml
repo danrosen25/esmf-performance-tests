@@ -5,5 +5,41 @@ name: "basic-tests"
 profile: on
 
 testsuite:
-    esmf_initialize:
+    initialize:
+        repeat: 2
         executable: esmf_initialize
+        timeout: 60
+        mpi: False
+    nuopc_basic:
+        executable: nuopc_basic
+        inputdata: {type: template, infile: templates/nuopc.cfg}
+        arguments: nuopc.cfg
+        timeout: 60
+        mpinp: 4
+    esmx_basic:
+        executable: esmx_basic
+        inputdata: {type: template, infile: templates/esmx.yml}
+        arguments: esmx.yml
+        timeout: 60
+        mpinp: 4
+    reconcile_totloverlap:
+        executable: esmf_reconcile
+        inputdata:
+            type: template
+            infile: templates/reconcile.cfg
+            vars: { compCount: 2, iterationCount: 1, fieldCount: 100 }
+        arguments: reconcile.cfg
+        timeout: 60
+        mpinp: 4
+    reconcile_2575splt:
+        executable: esmf_reconcile
+        inputdata: input/reconcile_2575split_2cmp200fld.cfg
+        arguments: reconcile_2575split_2cmp200fld.cfg
+        timeout: 60
+        mpinp: 4
+    reconcile_partoverlap:
+        executable: esmf_reconcile
+        inputdata: input/reconcile_partialoverlap_2cmp200fld.cfg
+        arguments: reconcile_partialoverlap_2cmp200fld.cfg
+        timeout: 60
+        mpinp: 4
