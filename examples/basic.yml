@@ -1,0 +1,11 @@
+# Basic YAML Test Suite
+
+name: "basic-tests"
+# esmf: <path_to_esmf>
+profile: on
+
+testsuite:
+    hello_world:
+        executable: hello_world
+    esmf_initialize:
+        executable: esmf_initialize

@@ -8,6 +8,12 @@ project(ESMF-PERFORMANCE-TESTS
         LANGUAGES Fortran)
 
 include(CTest)
+find_package(MPI)
 
 add_subdirectory(hello_world)
 add_subdirectory(esmf_initialize)
+
+file(GLOB_RECURSE TEST_INCLUDE_LIST "${CMAKE_CURRENT_BINARY_DIR}/testcfg/*.cmake")
+foreach(TEST_INCLUDE IN LISTS TEST_INCLUDE_LIST)
+  include(${TEST_INCLUDE})
+endforeach()
