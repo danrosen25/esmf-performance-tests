@@ -11,7 +11,7 @@ usage () {
   printf "OPTIONS\n"
   printf "  --env-auto=[ON|OFF]\n"
   printf "      Disable automatic system dependent environment settings\n"
-  printf "      (default: ON)\n"
+  printf "      (default: OFF)\n"
   printf "\n"
 }
 
@@ -36,7 +36,7 @@ EPTDIR=$(cd "$(dirname "$(readlink -f -n "${BASH_SOURCE[0]}" )" )" && pwd -P)
 ENVDIR=${EPTDIR}/env
 EPTCFG=""
 SYSTEM=$(find_system)
-ENV_AUTO="ON"
+ENV_AUTO="OFF"
 
 # process arguments
 POSITIONAL_ARGS=()
