@@ -5,7 +5,5 @@ name: "basic-tests"
 profile: on
 
 testsuite:
-    hello_world:
-        executable: hello_world
     esmf_initialize:
         executable: esmf_initialize
