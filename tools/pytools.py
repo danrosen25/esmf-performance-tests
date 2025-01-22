@@ -221,7 +221,7 @@ class TestCase():
         else:
             self.mpinp = "N/A"
         if "timeout" in options:
-            self.timeout = int(options["timeout"])
+            self.timeout = float(options["timeout"])
         else:
             self.timeout = 0
         if "arguments" in options:
@@ -393,6 +393,7 @@ class ESMFPerformanceTest():
             self.profile = True
 
     def execute_tests(self):
+        self.error = False
         self.esmf.setenv()
         os.makedirs(self.builddir, exist_ok=True)
         os.makedirs(self.testdir, exist_ok=True)
@@ -424,19 +425,24 @@ class ESMFPerformanceTest():
             cp = subprocess.run(["cmake", self.testsrc],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                error('CMake failure, see ' + str(logf.name))
+                error('CMake failure detected, see ' + str(logf.name))
+                self.error = True
             cp = subprocess.run(["make"],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                error('Build failure, see ' + str(logf.name))
+                error('Make failure detected, see ' + str(logf.name))
+                self.error = True
             cp = subprocess.run(["ctest", "--output-junit", resfpath],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                error('Test failure, see ' + str(logf.name))
-        print("FINISHED: " + self.name + " (" + str(logf.name) + ")")
+                error('CTest failure detected, see ' + str(logf.name))
+                self.error = True
         # read and print test results
         results = TestResults(resfpath, self.testsuite, self.esmf)
         print(results)
+        print("\nFINISHED: " + self.name + " (" + str(logf.name) + ")")
+        if self.error:
+            sys.exit(1)
 
 def main(argv):
     # read input arguments
