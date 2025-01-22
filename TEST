@@ -3,12 +3,15 @@
 # usage instructions
 usage () {
   printf "\n"
-  printf "Usage: $0 [OPTIONS ...] [ESMF_PERFORMANCE_TEST]\n"
+  printf "Usage: $0 [OPTIONS ...] [ESMF_PERFORMANCE_TEST_OPTIONS]\n"
   printf "\n"
-  printf "ESMF_PERFORMANCE_TEST\n"
-  printf "  ESMF performance test configuration file\n"
+  printf "ESMF_PERFORMANCE_TEST_OPTIONS\n"
+  printf "  ESMF performance test options\n"
+  printf "  (see $0 --help)\n"
   printf "\n"
   printf "OPTIONS\n"
+  printf "  --show\n"
+  printf "      Show this help message and exit\n"
   printf "  --env-auto=[ON|OFF]\n"
   printf "      Disable automatic system dependent environment settings\n"
   printf "      (default: OFF)\n"
@@ -34,7 +37,6 @@ source tools/bashtools.bash
 # settings
 EPTDIR=$(cd "$(dirname "$(readlink -f -n "${BASH_SOURCE[0]}" )" )" && pwd -P)
 ENVDIR=${EPTDIR}/env
-EPTCFG=""
 SYSTEM=$(find_system)
 ENV_AUTO="OFF"
 
@@ -42,11 +44,10 @@ ENV_AUTO="OFF"
 POSITIONAL_ARGS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --help|-h) usage; exit 0 ;;
+    --show) usage; exit 0 ;;
     --env-auto=?*) ENV_AUTO=${1#*=} ;;
     --env-auto)  usage_error "$1" "requires an argument" ;;
     --env-auto=) usage_error "$1" "requires an argument" ;;
-    -?*) usage_error "$1" "unknown option" ;;
     *) POSITIONAL_ARGS+=("${1}") ;;
   esac
   shift
@@ -62,11 +63,4 @@ esac
 
 set -eu
 
-# set performance test configuration file
-if [[ $# -ge 1 ]]; then
-  EPTCFG="${1}"
-else
-   usage_error "ESMF_PERFORMANCE_TEST" "is required"
-fi
-
-python3 tools/pytools.py --ifile ${EPTCFG}
+python3 tools/esmf_performance_test.py "$@"

@@ -14,7 +14,7 @@ import shutil
 import re
 
 def abort(message: str):
-    sys.exit('\033[91mERROR: ' + message + '\033[0m')
+    sys.exit(cred + 'ERROR: ' + message + cclr)
 
 def abortf(message: str, fpath: str, pos: int):
     lcount = 1
@@ -30,16 +30,16 @@ def abortf(message: str, fpath: str, pos: int):
                 lcount += 1
             ccount += 1
             index += 1
-    sys.exit('\033[91mERROR: ' + message + ' (' +
+    sys.exit(cred + 'ERROR: ' + message + ' (' +
         fpath + ':' + str(lcount) + ':' + str(ccount) + ')' +
-        '\033[0m'
+        cclr
     )
 
 def error(message: str):
-    print('\033[91mERROR: ' + message + '\033[0m')
+    print(cred + 'ERROR: ' + message + cclr)
 
 def warning(message: str):
-    print('\033[93mWARNING: ' + message + '\033[0m')
+    print(cylw + 'WARNING: ' + message + cclr)
 
 class ESMFInstallation():
 
@@ -445,12 +445,28 @@ class ESMFPerformanceTest():
             sys.exit(1)
 
 def main(argv):
+    global cred
+    global cylw
+    global cclr
+
     # read input arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ifile' , help='Input EPT file', required=True)
+    parser.add_argument('testsuite', help='YAML configuration file')
+    parser.add_argument('--color', help='add color to output',
+        action='store_true'
+    )
     args = parser.parse_args()
 
-    ept = ESMFPerformanceTest(args.ifile)
+    if args.color:
+        cred = '\033[91m'
+        cylw = '\033[93m'
+        cclr = '\033[0m'
+    else:
+        cred = ''
+        cylw = ''
+        cclr = ''
+
+    ept = ESMFPerformanceTest(args.testsuite)
     ept.execute_tests()
 
 if __name__ == "__main__":
