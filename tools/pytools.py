@@ -4,6 +4,7 @@ from pathlib import Path
 import argparse
 import xml.etree.ElementTree as ET
 import os
+from getpass import getuser
 import sys
 import yaml
 import subprocess
@@ -173,7 +174,7 @@ class Input():
                     else:
                         abortf("env - missing value", self.infile, index)
                 elif typ == 'username':
-                    ofile.write(os.getlogin())
+                    ofile.write(getuser())
                 elif typ == 'template':
                     ofile.write(os.path.abspath(self.infile))
                 elif typ == 'date':
