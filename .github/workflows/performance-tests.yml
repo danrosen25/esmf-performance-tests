@@ -61,10 +61,9 @@ jobs:
         echo "ESMF Version: ${{env.ESMF_VERSION}}" >> $GITHUB_STEP_SUMMARY
         echo "ESMF Hash:    ${{env.ESMF_COMMIT}}" >> $GITHUB_STEP_SUMMARY
         echo "***" >> $GITHUB_STEP_SUMMARY
-        ./TEST ${{env.testsuite}} | \
-          sed 's/\x1B\[[0-9;]\{1,\}[A-Za-z]//g' >> \
-          $GITHUB_STEP_SUMMARY
+        ./TEST ${{env.testsuite}} >> $GITHUB_STEP_SUMMARY
     - name: Extract Artifacts
+      if: always()
       run: |
         mkdir -p ${{env.logdir}}
         cp -R logs ${{env.logdir}}
@@ -72,6 +71,7 @@ jobs:
         find build -type f -name "LastTest.log" | xargs cp -t ${{env.logdir}}
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: esmf-performance-test-logs
         path: ${{env.logdir}}
