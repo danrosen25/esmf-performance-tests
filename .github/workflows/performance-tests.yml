@@ -1,0 +1,77 @@
+name: Performance Tests
+
+on:
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      esmf-ref:
+        description: 'ESMF branch, tag, or SHA'
+        required: true
+        type: string
+        default: 'develop'
+      esmf-cache:
+        description: 'cache ESMF installation'
+        required: true
+        type: boolean
+        default: false
+      testsuite:
+        description: 'testsuite file'
+        required: true
+        type: string
+        default: 'examples/basic.yml'
+
+env:
+  esmf-ref: 'develop'
+  esmf-cache: true
+  testsuite: 'examples/basic.yml'
+  logdir: ${{github.workspace}}/performance_test_artifacts
+
+jobs:
+  performance_test:
+    name: Performance Test
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: System Packages
+      run: |
+        sudo apt-get -yqq update
+        sudo apt-get -yqq install mpich
+        sudo apt-get -yqq install libnetcdf-dev libnetcdff-dev
+    - name: Manual Dispatch Configuration
+      if: ${{github.event_name == 'workflow_dispatch'}}
+      run: |
+        echo "esmf-ref=${{github.event.inputs.esmf-ref}}" >> $GITHUB_ENV
+        echo "esmf-cache=${{github.event.inputs.esmf-cache}}" >> $GITHUB_ENV
+        echo "testsuite=${{github.event.inputs.testsuite}}" >> $GITHUB_ENV
+    - name: Install ESMF
+      uses: esmf-org/install-esmf-action@v1
+      env:
+        ESMF_COMPILER: gfortran
+        ESMF_COMM: mpich
+        ESMF_NETCDF: nc-config
+      with:
+        version: ${{env.esmf-ref}}
+        cache: ${{env.esmf-cache}}
+    - uses: actions/checkout@v4
+    - name: Performance Test
+      run: |
+        echo "### ESMF Performance Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "ESMF Version: ${{env.ESMF_VERSION}}" >> $GITHUB_STEP_SUMMARY
+        echo "ESMF Hash:    ${{env.ESMF_COMMIT}}" >> $GITHUB_STEP_SUMMARY
+        echo "***" >> $GITHUB_STEP_SUMMARY
+        ./TEST ${{env.testsuite}} | \
+          sed 's/\x1B\[[0-9;]\{1,\}[A-Za-z]//g' >> \
+          $GITHUB_STEP_SUMMARY
+    - name: Extract Artifacts
+      run: |
+        mkdir -p ${{env.logdir}}
+        cp -R logs ${{env.logdir}}
+        cp -R run ${{env.logdir}}
+        find build -type f -name "LastTest.log" | xargs cp -t ${{env.logdir}}
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: esmf-performance-test-logs
+        path: ${{env.logdir}}
