@@ -1,0 +1,27 @@
+{
+    "access_right": "open",
+    "creators": [
+        {
+            "affiliation": "NSF National Center for Atmospheric Research",
+            "name": "Rosen, Daniel",
+            "orcid": "0000-0001-9772-8775"
+        },
+        {
+            "name": "ESMF Core Team"
+        }
+    ],
+    "description": "ESMF TestKit is a Python based testing framework for ESMF",
+    "keywords": [
+        "Earth System Modeling Framework",
+        "ESMF",
+        "TestKit"
+    ],
+    "language": "eng",
+    "license": {
+        "url": "https://github.com/esmf-org/esmf-testkit/blob/main/LICENSE.txt"
+    },
+    "resource_type": {
+        "type": "software"
+    },
+    "title": "ESMF TestKit"
+}
