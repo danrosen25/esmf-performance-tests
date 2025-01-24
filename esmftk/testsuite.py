@@ -74,10 +74,13 @@ class TestSuite():
                     self.testsuite[tname] = TestCase(tname,
                         opts, self.testdir, self.pkgout)
         # read profile
+        self.profile = "SUMMARY"
         if "profile" in config:
-            self.profile = config["profile"]
-        else:
-            self.profile = True
+            if isinstance(config["profile"], bool):
+                if not config["profile"]:
+                    self.profile = None
+            else:
+                self.profile = str(config["profile"]).upper()
 
     def run(self):
         self.rc = 0
@@ -99,9 +102,9 @@ class TestSuite():
             ts = os.path.getmtime(resfpath)
             tsiso = dt.fromtimestamp(ts).replace(microsecond=0).isoformat()
             os.rename(resfpath, resfpath.replace("latest", tsiso))
-        if self.profile:
+        if self.profile is not None:
             os.environ["ESMF_RUNTIME_PROFILE"] = "ON"
-            os.environ["ESMF_RUNTIME_PROFILE_OUTPUT"] = "SUMMARY"
+            os.environ["ESMF_RUNTIME_PROFILE_OUTPUT"] = self.profile
         for tname in self.testsuite:
             self.testsuite[tname].write_cmake(self.tcfgdir)
             self.testsuite[tname].clean_tdir()
