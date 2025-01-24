@@ -63,4 +63,4 @@ esac
 
 set -eu
 
-python3 tools/esmf_performance_test.py "$@"
+python3 -m esmftk "$@"
