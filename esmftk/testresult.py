@@ -15,6 +15,14 @@ import xml.etree.ElementTree as ET
 from .esmfinstall import *
 from .packageout import *
 
+class CsvStr(str):
+    def __new__(cls, content):
+        if any(c in content for c in [' ', ',', '"', '\n']):
+            return super(CsvStr, cls).__new__(
+                cls, '"' + content.replace('"', '""') + '"')
+        else:
+            return super(CsvStr, cls).__new__(cls, content)
+
 class TestResults():
 
     def __init__(self, resfile: str, testsuite: dict, esmf: ESMFInstallation,
@@ -41,7 +49,27 @@ class TestResults():
                                "mpinp": testsuite[testname].mpinp,
                                "status": t.get('status'),
                                "time": float(t.get('time'))})
-    def __str__(self):
+
+    def csv(self):
+        res = (f"name," +
+               f"hostname," +
+               f"esmf," +
+               f"mpi," +
+               f"mpinp," +
+               f"status," +
+               f"time_s")
+        for t in self.tests:
+            res += (f"\n" +
+                    CsvStr(f"{t['name']}") + "," +
+                    CsvStr(f"{t['hostname']}") + "," +
+                    CsvStr(f"{t['esmfvers']}") + "," +
+                    CsvStr(f"{t['mpi']}") + "," +
+                    CsvStr(f"{t['mpinp']}") + "," +
+                    CsvStr(f"{t['status']}") + "," +
+                    CsvStr(f"{t['time']:.3E}"))
+        return res
+
+    def markdown(self):
         wd = [ len('name'),
                len('hostname'),
                len('esmf'),
@@ -77,3 +105,6 @@ class TestResults():
                    f"{t['status']:6} | " +
                    f"{t['time']:.3E} |")
         return res
+
+    def __str__(self):
+        return self.markdown()

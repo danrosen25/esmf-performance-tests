@@ -3,6 +3,7 @@
 name: "basic-tests"
 # esmf: <path_to_esmf>
 profile: on
+results: {format: markdown}
 
 testsuite:
     initialize:

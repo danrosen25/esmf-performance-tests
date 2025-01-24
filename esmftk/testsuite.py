@@ -81,6 +81,18 @@ class TestSuite():
                     self.profile = None
             else:
                 self.profile = str(config["profile"]).upper()
+        # results format
+        self.resultsfmt = "markdown"
+        if "results" in config:
+            if isinstance(config["results"], dict):
+                if "format" in config["results"]:
+                    if config["results"]["format"] not in ["markdown", "csv"]:
+                        self.pkgout.abort('results format not supported - ' +
+                            config["results"]["format"]
+                        )
+                    self.resultsfmt = str(config["results"]["format"]).lower()
+            else:
+                self.pkgout.abort('testsuite configuration error - results')
 
     def run(self):
         self.rc = 0
@@ -137,7 +149,10 @@ class TestSuite():
         results = TestResults(resfpath, self.testsuite, self.esmf,
             self.pkgout
         )
-        print(results)
+        if self.resultsfmt == "csv":
+            print(results.csv())
+        else:
+            print(results.markdown())
         print("\nFINISHED: " + self.name + " (" + str(logf.name) + ")")
         return self.rc
 

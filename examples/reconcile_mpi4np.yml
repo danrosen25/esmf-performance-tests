@@ -3,6 +3,7 @@
 name: "reconcile-mpi4np"
 # esmf: <path_to_esmf>
 profile: on
+results: {format: csv}
 
 define: &esmf_reconcile
   executable: esmf_reconcile
