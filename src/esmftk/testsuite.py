@@ -30,7 +30,6 @@ class TestSuite():
         else:
             self.pkgout = pkgout
         self.filepath = str(filepath)
-        self.testsrc = files(__package__).joinpath('tests')
         self.testsuite = {}
         if not os.path.exists(self.filepath):
             self.pkgout.abort('File not found - ' + self.filepath)
@@ -57,6 +56,7 @@ class TestSuite():
         self.testdir = os.path.abspath(os.path.join("run", self.name))
         self.logdir = os.path.abspath(os.path.join("logs", self.name))
         self.tcfgdir = os.path.abspath(os.path.join(self.builddir, "testcfg"))
+        self.buildwrp = files(__package__).joinpath('wrapper')
         # read testsuite
         if "testsuite" not in config:
             self.pkgout.abort('[testsuite] not found - ' + self.filepath)
@@ -64,7 +64,7 @@ class TestSuite():
             self.pkgout.abort('[testsuite] is empty - ' + self.filepath)
         else:
             for tname, opts in config["testsuite"].items():
-                tname = tname.translate({ord(i): '_' for i in '/\\*'})
+                tname = tname.translate({ord(i): '_' for i in '/\\*|'})
                 if "repeat" in opts:
                     for i in range(opts["repeat"]):
                         newtname = tname + "-" + str(i + 1)
@@ -93,6 +93,27 @@ class TestSuite():
                     self.resultsfmt = str(config["results"]["format"]).lower()
             else:
                 self.pkgout.abort('testsuite configuration error - results')
+        # read src directory for tests
+        self.testbuild = True
+        self.testsrc = files(__package__).joinpath('tests')
+        if "tests" in config:
+            if isinstance(config["tests"], dict):
+                if "build" in config["tests"]:
+                    self.testbuild = bool(config["tests"]["build"])
+                if "src" in config["tests"]:
+                    if not os.path.isdir(config["tests"]["src"]):
+                        self.pkgout.abort('src for tests not found - ' +
+                            config["tests"]["src"]
+                        )
+                    self.testsrc = os.path.abspath(config["tests"]["src"])
+            else:
+                self.pkgout.abort('testsuite configuration error - tests')
+
+    def test_list(self):
+        tl = ""
+        for t in self.testsuite:
+            tl += t + "|"
+        return tl.rstrip("|")
 
     def run(self):
         self.rc = 0
@@ -124,27 +145,31 @@ class TestSuite():
         with open(logfpath, "w") as logf:
             logf.write(str(self.esmf))
             logf.flush()
-            cp = subprocess.run(["cmake", self.testsrc],
-                stdout=logf, stderr=logf, cwd=self.builddir)
+            if self.testbuild:
+                cp = subprocess.run(["cmake", self.buildwrp,
+                    "-DESMFTK_TESTS_SRC=" + str(self.testsrc)],
+                    stdout=logf, stderr=logf, cwd=self.builddir)
+            else:
+                cp = subprocess.run(["cmake", self.buildwrp],
+                    stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                self.pkgout.error('CMake failure detected, see ' +
+                self.pkgout.abort('CMake failure detected, see ' +
                     str(logf.name)
                 )
-                self.rc = 101
             cp = subprocess.run(["make"],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
-                self.pkgout.error('Make failure detected, see ' +
+                self.pkgout.abort('Make failure detected, see ' +
                     str(logf.name)
                 )
-                self.rc = 102
-            cp = subprocess.run(["ctest", "--output-junit", resfpath],
+            cp = subprocess.run(["ctest", "-R", self.test_list(),
+                "--output-junit", resfpath],
                 stdout=logf, stderr=logf, cwd=self.builddir)
             if cp.returncode != 0:
                 self.pkgout.error('CTest failure detected, see ' +
                     str(logf.name)
                 )
-                self.rc = 103
+                self.rc = 101
         # read and print test results
         results = TestResults(resfpath, self.testsuite, self.esmf,
             self.pkgout

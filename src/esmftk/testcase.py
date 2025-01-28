@@ -32,7 +32,10 @@ class TestCase():
         if "executable" not in options:
             self.pkgout.abort('[executable] missing - ' + self.name)
         else:
-            self.executable = str(options["executable"])
+            self.exe = os.path.basename(options["executable"])
+            self.exedir = os.path.abspath(
+                os.path.dirname(options["executable"])
+            )
         if "mpi" in options:
             self.mpi = bool(options["mpi"])
         else:
@@ -85,22 +88,34 @@ class TestCase():
         # generate <test>.cmake file
         output = '# name: ' + self.name + '\n\n'
         output += 'list(APPEND TESTLIST ' + self.name + ')\n'
+        output += 'if(TARGET ' + self.exe + ')\n'
+        output += '\tset(TEST_EXE $<TARGET_FILE:' + self.exe + '>)\n'
+        output += 'else()\n'
+        output += ('\tfind_program(TEST_EXE ' + self.exe +
+                   ' PATHS "' + self.exedir + '" NO_CACHE)\n')
+        output += 'endif()\n'
+        output += 'if(NOT TEST_EXE)\n'
+        output += ('\tMESSAGE(FATAL_ERROR "executable not found: ' +
+                   os.path.join(self.exedir, self.exe) + '")\n')
+        output += 'endif()\n'
         if self.mpi:
-            output += 'if(NOT MPI_Fortran_FOUND)\n'
-            output += '\tMESSAGE(ERROR "' + self.name + ' requires MPI")\n'
+            output += 'if(NOT MPI_FOUND)\n'
+            output += ('\tMESSAGE(FATAL_ERROR "' + self.name +
+                       ' requires MPI")\n')
             output += 'endif()\n'
             output += 'add_test(NAME ' + self.name + ' COMMAND\n'
             output += ('\t${MPIEXEC}' +
                        ' ${MPIEXEC_NUMPROC_FLAG} ' + self.mpinp +
-                       ' $<TARGET_FILE:' + self.executable + '>\n')
+                       ' ${TEST_EXE}\n')
         else:
             output += 'add_test(NAME ' + self.name + ' COMMAND\n'
-            output += '\t$<TARGET_FILE:' + self.executable + '>\n'
+            output += '\t${TEST_EXE}\n'
         if self.arguments is not None:
             output += '\t' + self.arguments + '\n'
         output += '\tWORKING_DIRECTORY ' + self.tdir + ')\n'
         output += ('set_tests_properties(' + self.name + ' PROPERTIES' +
                    ' TIMEOUT ' + str(self.timeout) + ')\n')
+        output += 'unset(TEST_EXE)\n'
         fpath = os.path.abspath(os.path.join(tcfgdir, self.cmakef))
         with open(fpath, "w") as cmakef:
             cmakef.write(output)

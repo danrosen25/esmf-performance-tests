@@ -39,16 +39,16 @@ class TestResults():
         root = tree.getroot()
         hostname = root.get('hostname')
         timestamp = root.get('timestamp')
-        for t in root.findall('testcase'):
-            testname = t.get('name')
-            self.tests.append({"name": testname,
+        for tname, tcase in testsuite.items():
+            tres = root.find(".//testcase[@name='" + tname + "']")
+            self.tests.append({"name": tres.get('name'),
                                "hostname": hostname,
                                "esmfvers": esmf.vers,
                                "timestamp": timestamp,
-                               "mpi": str(testsuite[testname].mpi)[0],
-                               "mpinp": testsuite[testname].mpinp,
-                               "status": t.get('status'),
-                               "time": float(t.get('time'))})
+                               "mpi": str(tcase.mpi)[0],
+                               "mpinp": tcase.mpinp,
+                               "status": tres.get('status'),
+                               "time": float(tres.get('time'))})
 
     def csv(self):
         res = (f"name," +

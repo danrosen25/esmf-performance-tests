@@ -10,15 +10,9 @@ project(ESMF-PERFORMANCE-TESTS
         VERSION 1.0
         LANGUAGES Fortran)
 
-include(CTest)
-find_package(MPI)
+find_package(MPI REQUIRED COMPONENTS Fortran)
 
 add_subdirectory(esmf_initialize)
 add_subdirectory(esmf_reconcile)
 add_subdirectory(esmx_basic)
 add_subdirectory(nuopc_basic)
-
-file(GLOB_RECURSE TEST_INCLUDE_LIST "${CMAKE_CURRENT_BINARY_DIR}/testcfg/*.cmake")
-foreach(TEST_INCLUDE IN LISTS TEST_INCLUDE_LIST)
-  include(${TEST_INCLUDE})
-endforeach()
