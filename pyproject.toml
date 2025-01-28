@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "esmftk"
+dynamic = ["version", "readme"]
+authors = [{name = "ESMF Core Team", email = "esmf_support@ucar.edu"}]
+maintainers = [ { name = "ESMF Core Team", email = "esmf_support@ucar.edu" } ]
+description = "ESMF TestKit is a Python based testing framework for ESMF"
+license = {file = "LICENSE"}
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+keywords = [
+    "ESMF",
+    "Earth System Modeling Framework",
+    "TestKit",
+    "testing framework",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "PyYAML",
+]
+
+[project.urls]
+Homepage = "https://github.com/esmf-org/esmf-testkit"
+Issues = "https://earthsystemmodeling.org/support/"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = true
+
+[tool.setuptools.package-data]
+"esmftk.tests" = ["*"]
+"esmftk.tests.cmake" = ["*"]
+"esmftk.tests.esmf_initialize" = ["*"]
+"esmftk.tests.esmf_reconcile" = ["*"]
+"esmftk.tests.nuopc_basic" = ["*"]
+"esmftk.tests.esmx_basic" = ["*"]
+"esmftk.tests.esmx_basic.esmx_comp2" = ["*"]
+"esmftk.tests.esmx_basic.esmx_comp2.cmake" = ["*"]
+"esmftk.tests.esmx_basic.esmx_comp1" = ["*"]
+"esmftk.tests.esmx_basic.esmx_comp1.cmake" = ["*"]
+"esmftk.templates" = ["*"]
+"esmftk.input" = ["*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "esmftk.__version__"}
+readme = {file = ["README.md"]}

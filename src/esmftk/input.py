@@ -12,6 +12,7 @@ Flight Center. All rights reserved.
 #standard
 from datetime import datetime as dt
 from getpass import getuser
+from importlib.resources import files
 import os
 import re
 import shutil
@@ -35,6 +36,12 @@ class Input():
             self.pkgout.abort('inputdata requires infile')
         else:
             self.infile = str(settings['infile'])
+        if os.path.exists(self.infile):
+            pass
+        elif os.path.exists(os.path.join(files(__package__), self.infile)):
+            self.infile = os.path.join(files(__package__), self.infile)
+        else:
+            self.pkgout.abort("input - infile not found " + self.infile)
         if 'outfile' not in settings:
             self.outfile = os.path.basename(self.infile)
         else:
@@ -53,6 +60,8 @@ class Input():
             self.copy_file(outdir)
         elif self.itype == 'template':
             self.fill_template(outdir)
+        else:
+            self.pkgout.abort("unknown input type " + self.itype)
 
     def copy_file(self, outdir: str):
         if os.path.isfile(self.infile):

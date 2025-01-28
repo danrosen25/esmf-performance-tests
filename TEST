@@ -63,4 +63,4 @@ esac
 
 set -eu
 
-python3 -m esmftk "$@"
+python3 -m src.esmftk "$@"

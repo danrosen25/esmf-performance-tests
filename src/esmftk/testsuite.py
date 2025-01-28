@@ -10,8 +10,8 @@ Flight Center. All rights reserved.
 '''
 
 # standard
-import argparse
 from datetime import datetime as dt
+from importlib.resources import files
 import os
 import subprocess
 # third party
@@ -30,7 +30,7 @@ class TestSuite():
         else:
             self.pkgout = pkgout
         self.filepath = str(filepath)
-        self.testsrc = os.path.join(os.getcwd(),"src")
+        self.testsrc = files(__package__).joinpath('tests')
         self.testsuite = {}
         if not os.path.exists(self.filepath):
             self.pkgout.abort('File not found - ' + self.filepath)
@@ -155,18 +155,3 @@ class TestSuite():
             print(results.markdown())
         print("\nFINISHED: " + self.name + " (" + str(logf.name) + ")")
         return self.rc
-
-def RunTestSuite(argv):
-
-    # read input arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('testsuite', help='YAML configuration file')
-    parser.add_argument('--color', help='add color to output',
-        action='store_true'
-    )
-    args = parser.parse_args()
-
-    p = PackageOut(args.color)
-    t = TestSuite(args.testsuite, p)
-    rc = t.run()
-    return rc
